@@ -71,3 +71,24 @@ setup.log
 _opam/
 
 # End of https://www.toptal.com/developers/gitignore/api/ocaml,coq
+
+# Latex
+*.pdf
+*.bak
+*.out
+*.bbl
+*.blg
+*.aux
+*.log
+*.tns
+*~
+*.raux
+*.wdvi
+_whizzy*
+._whizzy*
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.html
+*.haux
+*/_minted
