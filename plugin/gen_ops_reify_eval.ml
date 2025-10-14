@@ -33,8 +33,6 @@ struct
       | AT_bind ty ->
           let* rarg = reify_arg ty arg in
           apps_ev (app (mkglob' C.P.e_abind) (mkconst P.osign.sign)) 1 [| rarg |]
-      | AT_functor (i, ty) ->
-          
     in
     (* Reify a list of arguments. *)
     let rec reify_args (args : (arg_ty * Names.Id.t) list) : EConstr.t m =
@@ -119,7 +117,7 @@ struct
       @@ mkind P.oconc.term
     in
     case (mkVar c) ~return @@ fun i _ ->
-    (* The arguments are bundled as [(a1, (a2, (a3, ...)))]. 
+    (* The arguments are bundled as [(a1, (a2, (a3, ...)))].
      We have to repeatedly pattern match to extract all individual arguments. *)
     let rec on_args (n : int) (acc : EConstr.t) (args : Names.Id.t) : EConstr.t m =
       match n with

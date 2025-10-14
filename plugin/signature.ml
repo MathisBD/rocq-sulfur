@@ -18,14 +18,11 @@ type parg_ty_r =
   | PAT_base of Constrexpr.constr_expr
   | PAT_sort of Names.lident
   | PAT_bind of Names.lident list * parg_ty
-  | PAT_fctor of Names.lident * parg_ty
 
 and parg_ty = parg_ty_r CAst.t
 
 (** Declaration. *)
 type decl_r =
-  | FctorDecl of { name : Names.lident }
-      (** Functor declaration, e.g. [option : Functor]. *)
   | SortDecl of { name : Names.lident; var_ctor : Names.lident option }
       (** Sort declaration, e.g. [term : Type]. *)
   | CtorDecl of { name : Names.lident; arg_tys : parg_ty list; ret_ty : Names.lident }
@@ -43,15 +40,13 @@ and psignature = psignature_r CAst.t
 (**************************************************************************************)
 
 (** Argument type.
-    - [AT_base] contains the index of the base type in the [base_types] array.
-    - [AT_fctor] contains the index of the functor in the [functors] array. *)
-type arg_ty = AT_base of int | AT_term | AT_bind of arg_ty | AT_fctor of int * arg_ty
+    - [AT_base] contains the index of the base type in the [base_types] array. *)
+type arg_ty = AT_base of int | AT_term | AT_bind of arg_ty
 
 (** An abstract signature:
     - [sort] is the name of the (unique) sort of terms.
     - [var_ctor] is the name of the variable constructor.
     - [base_types] contains the list of base types.
-    - [functors] contains the list of functors.
     - [n_ctors] is the number of _non-variable_ constructors.
     - [ctor_names] (of length [n_ctors]) contains the name of each constructor.
     - [ctor_sig] (of length [n_ctors]) contains the argument types of each constructor. *)
@@ -59,7 +54,6 @@ type signature =
   { sort_name : Names.Id.t
   ; var_ctor_name : Names.Id.t
   ; base_types : EConstr.t array
-  ; functors : Names.GlobRef.t array
   ; n_ctors : int
   ; ctor_names : Names.Id.t array
   ; ctor_types : arg_ty list array
@@ -72,9 +66,6 @@ let rec arg_ty_constr (sign : signature) (ty : arg_ty) (ind : EConstr.t) : ECons
   | AT_base i -> sign.base_types.(i)
   | AT_term -> ind
   | AT_bind ty -> arg_ty_constr sign ty ind
-  | AT_fctor (i, ty) ->
-      let ty' = arg_ty_constr sign ty ind in
-      app (mkglob sign.functors.(i)) ty'
 
 (** [ctor_ty_constr sign tys ind] builds the type of a constructor as a [EConstr.t]. We
     use [ind] as a placeholder for the inductive type of terms. *)
@@ -89,7 +80,6 @@ let ctor_ty_constr (sign : signature) (tys : arg_ty list) (ind : EConstr.t) : EC
     the command [Sulfur Generate ...]. We can't check a signature during parsing because
     we need access to the global environment. *)
 
-type checked_functor = { fname : Names.Id.t; gref : Names.GlobRef.t }
 type checked_sort = { sname : Names.Id.t; var_ctor : Names.Id.t }
 type checked_ctor = { cname : Names.Id.t; arg_tys : arg_ty list }
 
@@ -97,11 +87,9 @@ type checked_ctor = { cname : Names.Id.t; arg_tys : arg_ty list }
 type state =
   { (* The global environment. *)
     env : Environ.env
-  ; (* The evar map, which contains the universe constraints 
+  ; (* The evar map, which contains the universe constraints
     generated while internalizing the base types. *)
     sigma : Evd.evar_map
-  ; (* The list of functors, most recent last *)
-    functors : checked_functor list
   ; (* The (unique) sort, or [None] if we haven't encountered it yet. *)
     sort : checked_sort option
   ; (* The list of declared constructors, most recent last. *)
@@ -112,23 +100,15 @@ type state =
 
 (** Check a name is fresh, i.e. it is not already present in the state. *)
 let check_fresh (st : state) (name : Names.lident) : unit =
-  let b1 = List.exists (fun f -> Names.Id.equal name.v f.fname) st.functors in
-  let b2 = List.exists (fun c -> Names.Id.equal name.v c.cname) st.ctors in
-  let b3 =
+  let b1 = List.exists (fun c -> Names.Id.equal name.v c.cname) st.ctors in
+  let b2 =
     match st.sort with
     | None -> false
     | Some s -> Names.Id.equal name.v s.sname || Names.Id.equal name.v s.var_ctor
   in
   (* TODO: check in the global env as well. *)
-  if b1 || b2 || b3
+  if b1 || b2
   then Log.error ?loc:name.loc "%s is already declared." (Names.Id.to_string name.v)
-
-(** Check a functor is declared. *)
-let check_fctor (st : state) (fctor : Names.lident) : int =
-  let fctors = List.mapi (fun i f -> (i, f)) st.functors in
-  match List.find_opt (fun (i, f) -> Names.Id.equal fctor.v f.fname) fctors with
-  | None -> Log.error ?loc:fctor.loc "Undeclared functor %s." (Names.Id.to_string fctor.v)
-  | Some (i, _) -> i
 
 (** Check a sort is declared. *)
 let check_sort (st : state) (sort : Names.lident) : unit =
@@ -160,10 +140,6 @@ let rec check_arg_ty (st : state) (ty : parg_ty) : state * arg_ty =
       List.iter (check_sort st) ids;
       let st, ty = check_arg_ty st ty in
       (st, List.fold_right (fun _ ty -> AT_bind ty) ids ty)
-  | PAT_fctor (id, ty) ->
-      let idx = check_fctor st id in
-      let st, ty = check_arg_ty st ty in
-      (st, AT_fctor (idx, ty))
 
 (** Check a list of argument types. *)
 let rec check_arg_tys (st : state) (ptys : parg_ty list) : state * arg_ty list =
@@ -189,33 +165,6 @@ let check_decl (st : state) (d : decl) : state =
       let st, tys = check_arg_tys st d'.arg_tys in
       check_sort st d'.ret_ty;
       { st with ctors = st.ctors @ [ { cname = d'.name.v; arg_tys = tys } ] }
-  (* Functor declaration. *)
-  | FctorDecl d' ->
-      check_fresh st d'.name;
-      (* Get the global reference of the functor. *)
-      let qid = Libnames.make_qualid Names.DirPath.empty d'.name.v in
-      let gref =
-        try Smartlocate.locate_global_with_alias qid
-        with _ ->
-          Log.error ?loc:d'.name.loc "%s was not found in the global environment."
-            (Names.Id.to_string d'.name.v)
-      in
-      (* Check the functor has type [Type -> Type]. *)
-      begin
-        try ignore @@ typecheck_fctor gref st.env st.sigma
-        with _ ->
-          Log.error ?loc:d'.name.loc "%s should be a constant of type [Type -> Type]."
-            (Pp.string_of_ppcmds @@ Printer.pr_global gref)
-      end;
-      (* Check there is a [NormalFunctor] instance. *)
-      begin
-        let clss = app (mkglob' C.NF.t) (mkglob gref) in
-        try ignore @@ Typeclasses.resolve_one_typeclass st.env st.sigma clss
-        with _ ->
-          Log.error ?loc:d'.name.loc "No instance of NormalFunctor %s was found."
-            (Pp.string_of_ppcmds @@ Printer.pr_global gref)
-      end;
-      { st with functors = st.functors @ [ { fname = d'.name.v; gref } ] }
   (* Sort declaration. *)
   | SortDecl d' ->
       (* Check we haven't declared a sort yet. *)
@@ -236,7 +185,7 @@ let check_decl (st : state) (d : decl) : state =
 let check_psignature (s : psignature) : signature m =
  fun env sigma ->
   (* Build the initial state. *)
-  let st = { env; sigma; functors = []; sort = None; ctors = []; base_types = [] } in
+  let st = { env; sigma; sort = None; ctors = []; base_types = [] } in
   (* Check each constructor declaration. *)
   let st = List.fold_left check_decl st s.v.decls in
   (* Check we declared a sort. *)
@@ -247,8 +196,7 @@ let check_psignature (s : psignature) : signature m =
   in
   (* Build the signature. *)
   let sign =
-    { functors = st.functors |> List.map (fun f -> f.gref) |> Array.of_list
-    ; sort_name = sort.sname
+    { sort_name = sort.sname
     ; var_ctor_name = sort.var_ctor
     ; n_ctors = List.length st.ctors
     ; base_types = st.base_types |> Array.of_list

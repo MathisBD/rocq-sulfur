@@ -2,7 +2,7 @@ From Sulfur Require Import Prelude Sig.
 From Sulfur Require ParamSyntax.
 Module P := ParamSyntax.
 
-(** This file defines a parameterized term grammar with _explicit_ renamings 
+(** This file defines a parameterized term grammar with _explicit_ renamings
     and substitutions. Quoted naturals, terms, renamings, and substitutions
     can contain meta-variables, which stand in for arbitrary expressions in
     parameterized syntax.
@@ -32,7 +32,7 @@ Inductive qnat :=
 (** Successor. *)
 | Q_succ : qnat -> qnat
 (** Explicit renaming applied to a quoted natural. *)
-| Q_rapply : ren -> qnat -> qnat 
+| Q_rapply : ren -> qnat -> qnat
 (** Quoted natural meta-variable. *)
 | Q_mvar : mvar -> qnat
 
@@ -45,7 +45,7 @@ with ren :=
 (** Renaming expansion. *)
 | R_cons : qnat -> ren -> ren
 (** Left to right composition of renamings. *)
-| R_comp : ren -> ren -> ren 
+| R_comp : ren -> ren -> ren
 (** Renaming meta-variable. *)
 | R_mvar : mvar -> ren.
 
@@ -53,7 +53,7 @@ Set Elimination Schemes.
 
 Derive NoConfusion for qnat ren.
 
-Scheme qnat_ind := Induction for qnat Sort Prop 
+Scheme qnat_ind := Induction for qnat Sort Prop
   with ren_ind := Induction for ren Sort Prop.
 Combined Scheme qnat_ren_ind from qnat_ind, ren_ind.
 
@@ -68,7 +68,7 @@ Reserved Notation "'args' tys" (at level 0, tys at level 0).
 
 Unset Elimination Schemes.
 
-(** Expressions are indexed by a kind: this is to avoid having too many 
+(** Expressions are indexed by a kind: this is to avoid having too many
     distinct constructors for instantiation by a renaming/substitution. *)
 Inductive expr : kind -> Type :=
 
@@ -90,9 +90,6 @@ Inductive expr : kind -> Type :=
 | E_aterm : term -> arg AT_term
 (** Binder argument. *)
 | E_abind {ty} : arg ty -> arg (AT_bind ty)
-(** Functor argument. *)
-| E_afunctor {ty : arg_ty} : 
-  forall f (sh : fctor_shape f), vec (arg ty) (fctor_size f sh) -> arg (AT_fctor f ty)
 
 (** Explicit substitution applied to a quoted natural. *)
 | E_sapply : subst -> qnat -> term
@@ -129,30 +126,28 @@ Derive NoConfusion for subst.
 
 Section ExprSubstInd.
   Context (P : forall k, expr k -> Prop).
-  Context (P0 : subst -> Prop).  
+  Context (P0 : subst -> Prop).
 
   Context (H_var : forall i, P _ (E_var i)).
   Context (H_ctor : forall c al, P _ al -> P _ (E_ctor c al)).
   Context (H_mvar : forall m, P _ (E_mvar m)).
   Context (H_al_nil : P _ E_al_nil).
-  Context (H_al_cons : forall ty tys (a : arg ty) (al : args tys), 
+  Context (H_al_cons : forall ty tys (a : arg ty) (al : args tys),
     P _ a -> P _ al -> P _ (E_al_cons a al)).
   Context (H_abase : forall b x, P _ (E_abase b x)).
   Context (H_aterm : forall t, P _ t -> P _ (E_aterm t)).
   Context (H_abind : forall ty (a : arg ty), P _ a -> P _ (E_abind a)).
-  Context (H_afunctor : forall ty f s (al : vec (arg ty) _), 
-    (forall i, P _ (vec_nth al i)) -> P _ (E_afunctor f s al)).
   Context (H_sapply : forall s i, P0 s -> P _ (E_sapply s i)).
   Context (H_ren : forall r k (t : expr k), P _ t -> P _ (E_ren r t)).
   Context (H_subst : forall s k (t : expr k), P0 s -> P _ t -> P _ (E_subst s t)).
- 
+
   Context (H0_id : P0 S_id).
   Context (H0_shift : P0 S_shift).
   Context (H0_cons : forall t s, P _ t -> P0 s -> P0 (S_cons t s)).
   Context (H0_comp : forall s1 s2, P0 s1 -> P0 s2 -> P0 (S_comp s1 s2)).
   Context (H0_sren : forall r, P0 (S_ren r)).
   Context (H0_mvar : forall m, P0 (S_mvar m)).
- 
+
   Fixpoint expr_ind k (t : expr k) {struct t} : P k t
   with subst_ind s {struct s} : P0 s.
   Proof.
@@ -165,10 +160,9 @@ Section ExprSubstInd.
     + apply H_abase.
     + apply H_aterm ; apply expr_ind.
     + apply H_abind ; apply expr_ind.
-    + apply H_afunctor. induction v ; depelim i ; simp vec_nth.
     + apply H_sapply ; apply subst_ind.
     + apply H_ren ; apply expr_ind.
-    + apply H_subst ; [apply subst_ind | apply expr_ind].   
+    + apply H_subst ; [apply subst_ind | apply expr_ind].
   - destruct s.
     + apply H0_id.
     + apply H0_shift.
@@ -176,7 +170,7 @@ Section ExprSubstInd.
     + apply H0_comp ; apply subst_ind.
     + apply H0_sren.
     + apply H0_mvar.
-  Qed. 
+  Qed.
 
   Lemma expr_subst_ind : (forall k t, P k t) /\ (forall s, P0 s).
   Proof. split ; [apply expr_ind | apply subst_ind]. Qed.
@@ -187,14 +181,14 @@ End ExprSubstInd.
 (** *** Compute the size of expressions. *)
 (*********************************************************************************)
 
-(** We define functions which compute the size of expressions/substitutions. 
+(** We define functions which compute the size of expressions/substitutions.
     This is useful to prove inequations of the form [S_cons t s <> s]. *)
 
 Equations qsize : qnat -> nat :=
 qsize Q_zero := 0 ;
 qsize (Q_succ i) := S (qsize i) ;
 qsize (Q_rapply r i) := S (rsize r + qsize i) ;
-qsize (Q_mvar _) := 0 
+qsize (Q_mvar _) := 0
 
 with rsize : ren -> nat :=
 rsize R_id := 0 ;
@@ -212,7 +206,6 @@ esize (E_al_cons a al) := S (esize a + esize al) ;
 esize (E_abase _ _) := 0 ;
 esize (E_aterm t) := S (esize t) ;
 esize (E_abind a) := S (esize a) ;
-esize (E_afunctor f sh al) := S (vec_sum (vec_map esize al)) ;
 esize (E_sapply s i) := S (ssize s + qsize i) ;
 esize (E_ren r t) := S (rsize r + esize t) ;
 esize (E_subst s t) := S (ssize s + esize t)
@@ -246,11 +239,11 @@ eq_ren (R_comp r1 r2) (R_comp r1' r2') := eq_ren r1 r1' && eq_ren r2 r2' ;
 eq_ren (R_mvar m) (R_mvar m') := Nat.eqb m m' ;
 eq_ren _ _ := false.
 
-Lemma eq_qnat_ren_spec : 
+Lemma eq_qnat_ren_spec :
   (forall i i', reflect (i = i') (eq_qnat i i')) *
   (forall r r', reflect (r = r') (eq_ren r r')).
 Proof.
-apply eq_qnat_elim with 
+apply eq_qnat_elim with
   (P := fun i i' res => reflect (i = i') res)
   (P0 := fun r r' res => reflect (r = r') res).
 all: intros ; try solve [ now constructor ].
@@ -275,21 +268,21 @@ Proof. now apply eq_qnat_ren_spec. Qed.
 (*********************************************************************************)
 
 (** An environment is a mapping from meta-variables to parameterized expressions. *)
-Record env := 
+Record env :=
   { assign_qnat : mvar -> nat
-  ; assign_ren : mvar -> Prelude.ren 
+  ; assign_ren : mvar -> Prelude.ren
   ; assign_term : mvar -> P.expr Kt
-  ; assign_subst : mvar -> P.subst }. 
+  ; assign_subst : mvar -> P.subst }.
 
 Section Evaluation.
   Context (e : env).
- 
+
   Equations qeval : qnat -> nat :=
   qeval Q_zero := 0 ;
-  qeval (Q_succ i) := S (qeval i) ; 
+  qeval (Q_succ i) := S (qeval i) ;
   qeval (Q_rapply r i) := reval r (qeval i) ;
   qeval (Q_mvar x) := e.(assign_qnat) x
-  
+
   with reval : ren -> Prelude.ren :=
   reval R_id := rid ;
   reval R_shift := rshift ;
@@ -305,18 +298,17 @@ Section Evaluation.
   eeval (E_abase b x) := P.E_abase b x ;
   eeval (E_aterm t) := P.E_aterm (eeval t) ;
   eeval (E_abind a) := P.E_abind (eeval a) ;
-  eeval (E_afunctor f sh al) := P.E_afunctor f sh (vec_map eeval al) ;
   eeval (E_sapply s i) := (seval s) (qeval i) ;
   eeval (E_ren r e) := P.rename (reval r) (eeval e) ;
   eeval (E_subst s e) := P.substitute (seval s) (eeval e) ;
   eeval (E_mvar x) := e.(assign_term) x
-  
+
   with seval : subst -> P.subst :=
   seval S_id := P.sid ;
   seval S_shift := P.sshift ;
   seval (S_cons t s) := P.scons (eeval t) (seval s) ;
   seval (S_comp s1 s2) :=
-    match s1, s2 with 
+    match s1, s2 with
     | S_ren r, s => P.rscomp (reval r) (seval s)
     | s, S_ren r => P.srcomp (seval s) (reval r)
     | s1, s2 => P.scomp (seval s1) (seval s2)
@@ -329,7 +321,7 @@ End Evaluation.
 (** The definition of [seval] on [S_comp] is hard to work with
     (but necessary to obtain the right computational behaviour).
     We use a different equation for [simp] and [autorewrite]. *)
-Lemma seval_comp_aux e s1 s2 : 
+Lemma seval_comp_aux e s1 s2 :
   seval e (S_comp s1 s2) =₁ P.scomp (seval e s1) (seval e s2).
 Proof.
 destruct s1 ; destruct s2 ; simp eeval ; try now reflexivity.
@@ -351,113 +343,113 @@ End WithSignature.
 (** Reification needs to inspect function composition, thus it can't be
     implemented as a Rocq function and is instead implemented in Ltac2. *)
 
-(** Turn an Ltac2 [int] to a Rocq [nat]. 
+(** Turn an Ltac2 [int] to a Rocq [nat].
     Negative integers are mapped to [0]. *)
-Ltac2 rec nat_of_int (x : int) : constr := 
+Ltac2 rec nat_of_int (x : int) : constr :=
   if Int.le x 0 then constr:(0)
   else let y := nat_of_int (Int.sub x 1) in constr:(S $y).
 
 (** Reification environment. *)
-Ltac2 Type env := 
-  { qnat_mvars : constr list 
+Ltac2 Type env :=
+  { qnat_mvars : constr list
   ; ren_mvars : constr list
   ; term_mvars : constr list
   ; subst_mvars : constr list }.
 
 (** The empty environment. *)
-Ltac2 empty_env () := 
+Ltac2 empty_env () :=
   { qnat_mvars := [] ; ren_mvars := [] ; term_mvars := [] ; subst_mvars := [] }.
 
-(** [index_of p xs] returns the index of the first element in [xs] 
+(** [index_of p xs] returns the index of the first element in [xs]
     that satisfies [p], or [None] if no element is found. *)
 Ltac2 rec index_of (p : 'a -> bool) (xs : 'a list) : int option :=
-  match xs with 
-  | [] => None 
+  match xs with
+  | [] => None
   | x :: xs =>
     if p x then Some 0 else
-    match index_of p xs with 
-    | None => None 
+    match index_of p xs with
+    | None => None
     | Some i => Some (Int.add 1 i)
-    end 
+    end
   end.
 
 (** Add a term [x] to the list [xs], and return the corresponding index.
     Generates a new metavariable index only if [x] is not already in [xs]. *)
 Ltac2 add_mvar (x : constr) (xs : constr list) : int * constr list :=
-  match index_of (Constr.equal x) xs with 
+  match index_of (Constr.equal x) xs with
   (* [x] is already in [xs]: simply return its index. *)
   | Some i => i, xs
   (* Add [x] to [xs] and return its index. *)
   | None => List.length xs, List.append xs [x]
   end.
-  
+
 Ltac2 add_qnat_mvar (t : constr) (e : env) : int * env :=
-  let (i, qnat_mvars) := add_mvar t (e.(qnat_mvars)) in 
+  let (i, qnat_mvars) := add_mvar t (e.(qnat_mvars)) in
   i, { qnat_mvars := qnat_mvars
      ; ren_mvars := e.(ren_mvars)
      ; term_mvars := e.(term_mvars)
      ; subst_mvars := e.(subst_mvars) }.
-  
+
 Ltac2 add_ren_mvar (t : constr) (e : env) : int * env :=
-  let (i, ren_mvars) := add_mvar t (e.(ren_mvars)) in 
-  i, { qnat_mvars := e.(qnat_mvars) 
+  let (i, ren_mvars) := add_mvar t (e.(ren_mvars)) in
+  i, { qnat_mvars := e.(qnat_mvars)
      ; ren_mvars := ren_mvars
      ; term_mvars := e.(term_mvars)
      ; subst_mvars := e.(subst_mvars) }.
 
 Ltac2 add_term_mvar (t : constr) (e : env) : int * env :=
-  let (i, term_mvars) := add_mvar t (e.(term_mvars)) in 
-  i, { qnat_mvars := e.(qnat_mvars) 
+  let (i, term_mvars) := add_mvar t (e.(term_mvars)) in
+  i, { qnat_mvars := e.(qnat_mvars)
      ; ren_mvars := e.(ren_mvars)
      ; term_mvars := term_mvars
      ; subst_mvars := e.(subst_mvars) }.
 
 Ltac2 add_subst_mvar (t : constr) (e : env) : int * env :=
-  let (i, subst_mvars) := add_mvar t (e.(subst_mvars)) in 
-  i, { qnat_mvars := e.(qnat_mvars) 
+  let (i, subst_mvars) := add_mvar t (e.(subst_mvars)) in
+  i, { qnat_mvars := e.(qnat_mvars)
      ; ren_mvars := e.(ren_mvars)
      ; term_mvars := e.(term_mvars)
      ; subst_mvars := subst_mvars }.
 
-(* TODO: should we handle a renaming applied to a natural? 
+(* TODO: should we handle a renaming applied to a natural?
    Might be weird e.g. for [x + y]. *)
-Ltac2 rec reify_nat (e : env) (t : constr) : env * constr := 
-  lazy_match! t with 
+Ltac2 rec reify_nat (e : env) (t : constr) : env * constr :=
+  lazy_match! t with
   | 0 => e, constr:(Q_zero)
-  | S ?i => 
+  | S ?i =>
     let (e, i) := reify_nat e i in
     e, constr:(Q_succ $i)
   (*| ?r ?i =>
     let (e, r) := reify_ren e r in
     let (e, i) := reify_nat e i in
     e, constr:(Q_rapply $r $i)*)
-  | ?i => 
+  | ?i =>
     let (idx, e) := add_qnat_mvar i e in
     let idx := nat_of_int idx in
     e, constr:(Q_mvar $idx)
   end
 
 with reify_ren (e : env) (t : constr) : env * constr :=
-  lazy_match! t with 
+  lazy_match! t with
   | rid => e, constr:(R_id)
   | S => e, constr:(R_shift)
-  | rshift => e, constr:(R_shift) 
+  | rshift => e, constr:(R_shift)
   | rcons ?i ?r =>
-    let (e, i) := reify_nat e i in 
-    let (e, r) := reify_ren e r in 
+    let (e, i) := reify_nat e i in
+    let (e, r) := reify_ren e r in
     e, constr:(R_cons $i $r)
   | rcomp ?r1 ?r2 =>
-    let (e, r1) := reify_ren e r1 in 
-    let (e, r2) := reify_ren e r2 in 
+    let (e, r1) := reify_ren e r1 in
+    let (e, r2) := reify_ren e r2 in
     e, constr:(R_comp $r1 $r2)
-  | ?r => 
+  | ?r =>
     let (idx, e) := add_ren_mvar r e in
     let idx := nat_of_int idx in
     e, constr:(R_mvar $idx)
   end.
 
 (** [convertible t1 t2] checks if [t1] and [t2] are equal modulo all reduction rules.
-    TODO: use actual conversion when we upgrade to Rocq 9.0, so we don't inadvertently 
+    TODO: use actual conversion when we upgrade to Rocq 9.0, so we don't inadvertently
     unify metavariables. *)
 Ltac2 convertible (t1 : constr) (t2 : constr) : bool :=
   Control.plus (fun () => Unification.unify_with_current_ts t1 t2 ; true) (fun _ => false).
@@ -465,9 +457,9 @@ Ltac2 convertible (t1 : constr) (t2 : constr) : bool :=
 (** [decompose_sapply t] checks if [t] is an application [s i] where [s] is
     a level one substitution. *)
 Ltac2 decompose_sapply (sig : constr) (t : constr) : (constr * constr) option :=
-  match! t with 
-  | ?s ?i => 
-    if convertible (Constr.type s) constr:(@P.subst $sig) 
+  match! t with
+  | ?s ?i =>
+    if convertible (Constr.type s) constr:(@P.subst $sig)
     then Some (s, i)
     else None
   | _ => None
@@ -475,28 +467,25 @@ Ltac2 decompose_sapply (sig : constr) (t : constr) : (constr * constr) option :=
 
 (** Reify an expression [t : P.expr k]. *)
 Ltac2 rec reify_expr (sig : constr) (e : env) (t : constr) : env * constr :=
-  lazy_match! t with 
-  | P.E_var ?i => 
+  lazy_match! t with
+  | P.E_var ?i =>
     let (e, i) := reify_nat e i in
     e, constr:(@E_var $sig $i)
-  | P.E_ctor ?c ?al => 
+  | P.E_ctor ?c ?al =>
     let (e, al) := reify_expr sig e al in
     e, constr:(@E_ctor $sig $c $al)
   | P.E_al_nil => e, constr:(@E_al_nil $sig)
-  | P.E_al_cons ?a ?al => 
+  | P.E_al_cons ?a ?al =>
     let (e, a) := reify_expr sig e a in
     let (e, al) := reify_expr sig e al in
     e, constr:(@E_al_cons $sig _ _ $a $al)
   | P.E_abase ?b ?x => e, constr:(@E_abase $sig $b $x)
-  | P.E_aterm ?t => 
+  | P.E_aterm ?t =>
     let (e, t) := reify_expr sig e t in
     e, constr:(@E_aterm $sig $t)
   | P.E_abind ?a =>
     let (e, a) := reify_expr sig e a in
     e, constr:(@E_abind $sig _ $a)
-  | P.E_afunctor ?f ?sh ?al =>
-    let (e, al) := reify_expr_vec sig e al in
-    e, constr:(@E_afunctor $sig _ $f $sh $al)
   | P.rename ?r ?t =>
     let (e, r) := reify_ren e r in
     let (e, t) := reify_expr sig e t in
@@ -505,11 +494,11 @@ Ltac2 rec reify_expr (sig : constr) (e : env) (t : constr) : env * constr :=
     let (e, s) := reify_subst sig e s in
     let (e, t) := reify_expr sig e t in
     e, constr:(@E_subst $sig _ $s $t)
-  | ?t => 
+  | ?t =>
     (* Check if [t] is an application of a substitution to a natural. *)
-    match decompose_sapply sig t with 
-    | Some (s, i) => 
-      let (e, s) := reify_subst sig e s in 
+    match decompose_sapply sig t with
+    | Some (s, i) =>
+      let (e, s) := reify_subst sig e s in
       let (e, i) := reify_nat e i in
       e, constr:(E_sapply $s $i)
     | None =>
@@ -521,9 +510,9 @@ Ltac2 rec reify_expr (sig : constr) (e : env) (t : constr) : env * constr :=
 
 (** Reify a vector of expressions [ts : vec (P.expr k) n]. *)
 with reify_expr_vec (sig : constr) (e : env) (ts : constr) : env * constr :=
-  lazy_match! ts with 
+  lazy_match! ts with
   | @vnil ?ty => e, constr:(@vnil $ty)
-  | @vcons ?ty ?n ?t ?ts => 
+  | @vcons ?ty ?n ?t ?ts =>
     let (e, t) := reify_expr sig e t in
     let (e, ts) := reify_expr_vec sig e ts in
     e, constr:(@vcons $ty $n $t $ts)
@@ -531,61 +520,61 @@ with reify_expr_vec (sig : constr) (e : env) (ts : constr) : env * constr :=
 
 (** Reify a substitutions [s : P.subst]. *)
 with reify_subst (sig : constr) (e : env) (s : constr) : env * constr :=
-  lazy_match! s with 
+  lazy_match! s with
   | P.sid => e, constr:(@S_id $sig)
   | P.E_var => e, constr:(@S_id $sig)
   | P.sshift => e, constr:(@S_shift $sig)
   | P.scons ?t ?s =>
-    let (e, t) := reify_expr sig e t in 
-    let (e, s) := reify_subst sig e s in 
+    let (e, t) := reify_expr sig e t in
+    let (e, s) := reify_subst sig e s in
     e, constr:(@S_cons $sig $t $s)
   | P.scomp ?s1 ?s2 =>
-    let (e, s1) := reify_subst sig e s1 in 
-    let (e, s2) := reify_subst sig e s2 in 
+    let (e, s1) := reify_subst sig e s1 in
+    let (e, s2) := reify_subst sig e s2 in
     e, constr:(@S_comp $sig $s1 $s2)
   | P.srcomp ?s ?r =>
-    let (e, s) := reify_subst sig e s in 
+    let (e, s) := reify_subst sig e s in
     let (e, r) := reify_ren e r in
     e, constr:(@S_comp $sig $s (@S_ren $sig $r))
   | P.rscomp ?r ?s =>
     let (e, r) := reify_ren e r in
-    let (e, s) := reify_subst sig e s in 
+    let (e, s) := reify_subst sig e s in
     e, constr:(@S_comp $sig (@S_ren $sig $r) $s)
-  | ?s => 
+  | ?s =>
     let (idx, e) := add_subst_mvar s e in
     let idx := nat_of_int idx in
     e, constr:(@S_mvar $sig $idx)
   end.
 
-(** Turn a list of [constr] into a Rocq list. 
+(** Turn a list of [constr] into a Rocq list.
     [ty] is the type of each element in the list, which is needed
     to build the empty list. *)
 Ltac2 rec coq_list (ty : constr) (xs : constr list) : constr :=
-  match xs with 
+  match xs with
   | [] => constr:(@nil $ty)
   | x :: xs =>
-    let xs := coq_list ty xs in 
+    let xs := coq_list ty xs in
     constr:(@cons $ty $x $xs)
   end.
 
-(** We define our own version of [List.nth], because we need to 
+(** We define our own version of [List.nth], because we need to
     unfold this in [RASimpl.v], and we don't want to inadvertendly unfold
     occurences of [List.nth] which were not introduced by [build_env]. *)
 Fixpoint list_nth {A} (n : nat) (xs : list A) (default : A) : A :=
-  match xs with 
-  | [] => default 
+  match xs with
+  | [] => default
   | x :: xs => match n with 0 => x | S n => list_nth n xs default end
   end.
-  
+
 (** Turn the Ltac2 representation of the environment into the equivalent
     Rocq representation. *)
 Ltac2 build_env (sig : constr) (e : env) : constr :=
-  let e1 := coq_list constr:(nat) (e.(qnat_mvars)) in 
-  let e2 := coq_list constr:(Prelude.ren) (e.(ren_mvars)) in 
-  let e3 := coq_list constr:(@P.expr $sig Kt) (e.(term_mvars)) in 
-  let e4 := coq_list constr:(@P.subst $sig) (e.(subst_mvars)) in 
+  let e1 := coq_list constr:(nat) (e.(qnat_mvars)) in
+  let e2 := coq_list constr:(Prelude.ren) (e.(ren_mvars)) in
+  let e3 := coq_list constr:(@P.expr $sig Kt) (e.(term_mvars)) in
+  let e4 := coq_list constr:(@P.subst $sig) (e.(subst_mvars)) in
   constr:(
-    @Build_env $sig 
+    @Build_env $sig
       (fun n => list_nth n $e1 0)
       (fun n => list_nth n $e2 rid)
       (fun n => list_nth n $e3 (P.E_var 0))

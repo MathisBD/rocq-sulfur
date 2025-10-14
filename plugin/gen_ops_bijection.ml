@@ -9,8 +9,8 @@ module C = Constants
 
 module Make (P : sig
   val sign : signature
-  val ops0 : ops_zero
-  val ops1 : ops_one
+  val ops_conc : ops_concrete
+  val ops_sign : ops_sign
   val re : ops_reify_eval
   val congr : ops_congr
 end) =
@@ -21,22 +21,22 @@ struct
 
   (** Build [forall t, eval (reify t) = t]. *)
   let build_eval_reify () : EConstr.t m =
-    prod "t" (mkind P.ops0.term) @@ fun t ->
+    prod "t" (mkind P.ops_conc.term) @@ fun t ->
     let t' =
       apps (mkconst P.re.eval)
-        [| app (mkglob' C.k_t) @@ mkind P.ops1.base
+        [| app (mkglob' C.k_t) @@ mkind P.ops_sign.base
          ; app (mkconst P.re.reify) @@ EConstr.mkVar t
         |]
     in
-    ret @@ apps (mkglob' C.eq) [| mkind P.ops0.term; t'; EConstr.mkVar t |]
+    ret @@ apps (mkglob' C.eq) [| mkind P.ops_conc.term; t'; EConstr.mkVar t |]
 
   (** Build [forall t, seval (sreify s) =₁ s]. *)
   let build_seval_sreify () : EConstr.t m =
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
     let s' = app (mkconst P.re.seval) @@ app (mkconst P.re.sreify) @@ EConstr.mkVar s in
     ret
-    @@ apps (mkglob' C.point_eq)
-         [| mkglob' C.nat; mkind P.ops0.term; s'; EConstr.mkVar s |]
+    @@ apps (mkglob' C.eq1)
+         [| mkglob' C.nat; mkind P.ops_conc.term; s'; EConstr.mkVar s |]
 
   (** Build the induction hypothesis for the non-variable constructor number [idx]
       (starting at [0]). *)
@@ -47,21 +47,24 @@ struct
       match ty with
       | AT_base b ->
           ret
-          @@ apps (mkglob' C.O.e_abase)
-               [| mkconst P.ops1.sign; mkctor (P.ops1.base, b + 1); mkVar arg |]
-      | AT_term -> ret @@ apps (mkglob' C.O.e_aterm) [| mkconst P.ops1.sign; mkVar arg |]
+          @@ apps (mkglob' C.P.e_abase)
+               [| mkconst P.ops_sign.sign; mkctor (P.ops_sign.base, b + 1); mkVar arg |]
+      | AT_term ->
+          ret @@ apps (mkglob' C.P.e_aterm) [| mkconst P.ops_sign.sign; mkVar arg |]
       | AT_bind ty ->
           let* arg' = build_arg ty arg in
-          apps_ev (app (mkglob' C.O.e_abind) (mkconst P.ops1.sign)) 1 [| arg' |]
+          apps_ev (app (mkglob' C.P.e_abind) (mkconst P.ops_sign.sign)) 1 [| arg' |]
     in
     (* Re-build the list of arguments. *)
     let rec build_args (args : (arg_ty * Names.Id.t) list) : EConstr.t m =
       match args with
-      | [] -> ret @@ app (mkglob' C.O.e_al_nil) (mkconst P.ops1.sign)
+      | [] -> ret @@ app (mkglob' C.P.e_al_nil) (mkconst P.ops_sign.sign)
       | (ty, arg) :: args ->
           let* rarg = build_arg ty arg in
           let* rargs = build_args args in
-          apps_ev (app (mkglob' C.O.e_al_cons) (mkconst P.ops1.sign)) 2 [| rarg; rargs |]
+          apps_ev
+            (app (mkglob' C.P.e_al_cons) (mkconst P.ops_sign.sign))
+            2 [| rarg; rargs |]
     in
     (* Build the recursive hypothesis on argument [arg] with arg type [ty].
      Base types ([AT_base]) don't give rise to a hypothesis. *)
@@ -79,7 +82,7 @@ struct
       match tys with
       | [] -> k []
       | ty :: tys ->
-          prod "x" (arg_ty_constr P.sign ty @@ term1 P.ops1) @@ fun x ->
+          prod "x" (arg_ty_constr P.sign ty @@ term1 P.ops_sign) @@ fun x ->
           rec_hyp x ty @@ loop tys @@ fun xs -> k (x :: xs)
     in
     loop tys @@ fun args ->
@@ -87,23 +90,25 @@ struct
     let* args' = build_args @@ List.combine tys args in
     ret
     @@ app (mkVar pred)
-    @@ apps (mkglob' C.O.e_ctor)
-         [| mkconst P.ops1.sign; mkctor (P.ops1.ctor, idx + 1); args' |]
+    @@ apps (mkglob' C.P.e_ctor)
+         [| mkconst P.ops_sign.sign; mkctor (P.ops_sign.ctor, idx + 1); args' |]
 
   (** Build the custom induction principle on level one terms. *)
   let build_ind () : EConstr.t m =
     let open EConstr in
-    prod "P" (arrow (term1 P.ops1) mkProp) @@ fun pred ->
+    prod "P" (arrow (term1 P.ops_sign) mkProp) @@ fun pred ->
     let* var_hyp =
       prod "i" (mkglob' C.nat) @@ fun i ->
       ret
       @@ app (mkVar pred)
-      @@ apps (mkglob' C.O.e_var) [| mkconst P.ops1.sign; mkVar i |]
+      @@ apps (mkglob' C.P.e_var) [| mkconst P.ops_sign.sign; mkVar i |]
     in
     let* ctor_hyps =
       List.monad_mapi (build_ind_hyp pred) @@ Array.to_list P.sign.ctor_types
     in
-    let* concl = prod "t" (term1 P.ops1) @@ fun t -> ret @@ app (mkVar pred) (mkVar t) in
+    let* concl =
+      prod "t" (term1 P.ops_sign) @@ fun t -> ret @@ app (mkVar pred) (mkVar t)
+    in
     ret @@ arrows (var_hyp :: ctor_hyps) concl
 
   (**************************************************************************************)
@@ -148,15 +153,15 @@ struct
       let* _ = pattern (mkVar arg) in
       match ty with
       | AT_base _ ->
-          let* _ = Tactics.apply (mkglob' C.O.inv_Ka_base) in
+          let* _ = Tactics.apply (mkglob' C.P.inv_Ka_base) in
           let* _ = intro_fresh "b" in
           ret ()
       | AT_term ->
-          let* _ = Tactics.apply (mkglob' C.O.inv_Ka_term) in
+          let* _ = Tactics.apply (mkglob' C.P.inv_Ka_term) in
           let* _ = intro_fresh "t" in
           ret ()
       | AT_bind ty' ->
-          let* _ = Tactics.apply (mkglob' C.O.inv_Ka_bind) in
+          let* _ = Tactics.apply (mkglob' C.P.inv_Ka_bind) in
           let* arg' = intro_fresh "a" in
           inv_arg ty' arg'
     in
@@ -164,9 +169,9 @@ struct
     let rec inv_args (tys : arg_ty list) (args : Names.Id.t) : unit Proofview.tactic =
       let* _ = pattern (mkVar args) in
       match tys with
-      | [] -> Tactics.apply (mkglob' C.O.inv_Kal_nil)
+      | [] -> Tactics.apply (mkglob' C.P.inv_Kal_nil)
       | ty :: tys ->
-          let* _ = Tactics.apply (mkglob' C.O.inv_Kal_cons) in
+          let* _ = Tactics.apply (mkglob' C.P.inv_Kal_cons) in
           let* arg = intro_fresh "a" in
           let* args = intro_fresh "al" in
           inv_arg ty arg >> inv_args tys args
@@ -191,19 +196,19 @@ struct
     let* ctor_hyps = repeat_n P.sign.n_ctors (intro_fresh "H") in
     (* Apply the well founded induction principle. *)
     let term1 =
-      apps (mkglob' C.O.expr)
-        [| mkconst P.ops1.sign; app (mkglob' C.k_t) @@ mkind P.ops1.base |]
+      apps (mkglob' C.P.expr)
+        [| mkconst P.ops_sign.sign; app (mkglob' C.k_t) @@ mkind P.ops_sign.base |]
     in
     let esize =
-      apps (mkglob' C.O.esize)
-        [| mkconst P.ops1.sign; app (mkglob' C.k_t) @@ mkind P.ops1.base |]
+      apps (mkglob' C.P.esize)
+        [| mkconst P.ops_sign.sign; app (mkglob' C.k_t) @@ mkind P.ops_sign.base |]
     in
     let* _ =
       Tactics.apply @@ apps (mkglob' C.measure_induction) [| term1; esize; mkVar pred |]
     in
     (* Invert [t]. *)
     let* t = intro_fresh "t" in
-    let* _ = pattern (mkVar t) >> Tactics.apply (mkglob' C.O.inv_Kt) in
+    let* _ = pattern (mkVar t) >> Tactics.apply (mkglob' C.P.inv_Kt) in
     Proofview.tclDISPATCH
       [ (* Solve the [E_var] case. *)
         begin
@@ -224,12 +229,12 @@ end
 (**************************************************************************************)
 
 (** Generate the bijection proof and the custom induction principle. *)
-let generate (s : signature) (ops0 : ops_zero) (ops1 : ops_one) (re : ops_reify_eval)
-    (congr : ops_congr) : ops_bijection =
+let generate (s : signature) (ops_conc : ops_concrete) (ops_sign : ops_sign)
+    (re : ops_reify_eval) (congr : ops_congr) : ops_bijection =
   let module M = Make (struct
     let sign = s
-    let ops0 = ops0
-    let ops1 = ops1
+    let ops_conc = ops_conc
+    let ops_sign = ops_sign
     let re = re
     let congr = congr
   end) in

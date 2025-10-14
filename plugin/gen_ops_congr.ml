@@ -4,8 +4,8 @@ module C = Constants
 
 module Make (P : sig
   val sign : signature
-  val ops0 : ops_zero
-  val ops1 : ops_one
+  val ops_conc : ops_concrete
+  val ops_sign : ops_sign
   val ops_re : ops_reify_eval
 end) =
 struct
@@ -23,8 +23,8 @@ struct
       match tys with
       | [] -> k []
       | ty :: tys ->
-          prod "l" (arg_ty_constr P.sign ty @@ mkind P.ops0.term) @@ fun t ->
-          prod "r" (arg_ty_constr P.sign ty @@ mkind P.ops0.term) @@ fun t' ->
+          prod "l" (arg_ty_constr P.sign ty @@ mkind P.ops_conc.term) @@ fun t ->
+          prod "r" (arg_ty_constr P.sign ty @@ mkind P.ops_conc.term) @@ fun t' ->
           with_vars tys @@ fun ts -> k ((t, t') :: ts)
     in
     (* Bind the arguments of the constructor. *)
@@ -34,14 +34,14 @@ struct
       List.map2
         (fun (t, t') ty ->
           apps (mkglob' C.eq)
-            [| arg_ty_constr P.sign ty @@ mkind P.ops0.term; mkVar t; mkVar t' |])
+            [| arg_ty_constr P.sign ty @@ mkind P.ops_conc.term; mkVar t; mkVar t' |])
         ts P.sign.ctor_types.(idx)
     in
     (* Build the conclusion. *)
-    let ctor = mkctor (P.ops0.term, idx + 2) in
+    let ctor = mkctor (P.ops_conc.term, idx + 2) in
     let left = apps ctor @@ Array.of_list @@ List.map mkVar @@ List.map fst ts in
     let right = apps ctor @@ Array.of_list @@ List.map mkVar @@ List.map snd ts in
-    let concl = apps (mkglob' C.eq) [| mkind P.ops0.term; left; right |] in
+    let concl = apps (mkglob' C.eq) [| mkind P.ops_conc.term; left; right |] in
     (* Assemble everything. *)
     ret @@ arrows hyps concl
 
@@ -50,17 +50,17 @@ struct
     let open EConstr in
     prod "r" (mkglob' C.ren) @@ fun r ->
     prod "r'" (mkglob' C.ren) @@ fun r' ->
-    prod "t" (mkind P.ops0.term) @@ fun t ->
-    prod "t'" (mkind P.ops0.term) @@ fun t' ->
+    prod "t" (mkind P.ops_conc.term) @@ fun t ->
+    prod "t'" (mkind P.ops_conc.term) @@ fun t' ->
     let hyp_r =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
     in
-    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops0.term; mkVar t; mkVar t' |] in
+    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops_conc.term; mkVar t; mkVar t' |] in
     let concl =
       apps (mkglob' C.eq)
-        [| mkind P.ops0.term
-         ; apps (mkconst P.ops0.rename) [| mkVar r; mkVar t |]
-         ; apps (mkconst P.ops0.rename) [| mkVar r'; mkVar t' |]
+        [| mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.rename) [| mkVar r; mkVar t |]
+         ; apps (mkconst P.ops_conc.rename) [| mkVar r'; mkVar t' |]
         |]
     in
     ret @@ arrows [ hyp_r; hyp_t ] concl
@@ -70,20 +70,20 @@ struct
     let open EConstr in
     prod "r" (mkglob' C.ren) @@ fun r ->
     prod "r'" (mkglob' C.ren) @@ fun r' ->
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
-    prod "s'" (mkconst P.ops0.subst) @@ fun s' ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
+    prod "s'" (mkconst P.ops_conc.subst) @@ fun s' ->
     let hyp_r =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
     in
     let hyp_s =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkind P.ops0.term; mkVar s; mkVar s' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s; mkVar s' |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
-         ; apps (mkconst P.ops0.rscomp) [| mkVar r; mkVar s |]
-         ; apps (mkconst P.ops0.rscomp) [| mkVar r'; mkVar s' |]
+         ; mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.rscomp) [| mkVar r; mkVar s |]
+         ; apps (mkconst P.ops_conc.rscomp) [| mkVar r'; mkVar s' |]
         |]
     in
     ret @@ arrows [ hyp_r; hyp_s ] concl
@@ -91,22 +91,22 @@ struct
   (** Build [forall s s' r r', s =₁ s' -> r =₁ r' -> srcomp s r =₁ srcomp s' r']. *)
   let build_congr_srcomp () : EConstr.t m =
     let open EConstr in
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
-    prod "s'" (mkconst P.ops0.subst) @@ fun s' ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
+    prod "s'" (mkconst P.ops_conc.subst) @@ fun s' ->
     prod "r" (mkglob' C.ren) @@ fun r ->
     prod "r'" (mkglob' C.ren) @@ fun r' ->
     let hyp_s =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkind P.ops0.term; mkVar s; mkVar s' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s; mkVar s' |]
     in
     let hyp_r =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkglob' C.nat; mkVar r; mkVar r' |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
-         ; apps (mkconst P.ops0.srcomp) [| mkVar s; mkVar r |]
-         ; apps (mkconst P.ops0.srcomp) [| mkVar s'; mkVar r' |]
+         ; mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.srcomp) [| mkVar s; mkVar r |]
+         ; apps (mkconst P.ops_conc.srcomp) [| mkVar s'; mkVar r' |]
         |]
     in
     ret @@ arrows [ hyp_s; hyp_r ] concl
@@ -114,20 +114,20 @@ struct
   (** Build [forall t t' s s', t = t' -> s =₁ s' -> scons t s =₁ scons t' s']. *)
   let build_congr_scons () : EConstr.t m =
     let open EConstr in
-    prod "t" (mkind P.ops0.term) @@ fun t ->
-    prod "t'" (mkind P.ops0.term) @@ fun t' ->
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
-    prod "s'" (mkconst P.ops0.subst) @@ fun s' ->
-    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops0.term; mkVar t; mkVar t' |] in
+    prod "t" (mkind P.ops_conc.term) @@ fun t ->
+    prod "t'" (mkind P.ops_conc.term) @@ fun t' ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
+    prod "s'" (mkconst P.ops_conc.subst) @@ fun s' ->
+    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops_conc.term; mkVar t; mkVar t' |] in
     let hyp_s =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkind P.ops0.term; mkVar s; mkVar s' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s; mkVar s' |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
-         ; apps (mkconst P.ops0.scons) [| mkVar t; mkVar s |]
-         ; apps (mkconst P.ops0.scons) [| mkVar t'; mkVar s' |]
+         ; mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.scons) [| mkVar t; mkVar s |]
+         ; apps (mkconst P.ops_conc.scons) [| mkVar t'; mkVar s' |]
         |]
     in
     ret @@ arrows [ hyp_t; hyp_s ] concl
@@ -135,17 +135,17 @@ struct
   (** Build [forall s s', s =₁ s' -> up_subst s =₁ up_subst s']. *)
   let build_congr_up_subst () : EConstr.t m =
     let open EConstr in
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
-    prod "s'" (mkconst P.ops0.subst) @@ fun s' ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
+    prod "s'" (mkconst P.ops_conc.subst) @@ fun s' ->
     let hyp =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkind P.ops0.term; mkVar s; mkVar s' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s; mkVar s' |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
-         ; app (mkconst P.ops0.up_subst) (mkVar s)
-         ; app (mkconst P.ops0.up_subst) (mkVar s')
+         ; mkind P.ops_conc.term
+         ; app (mkconst P.ops_conc.up_subst) (mkVar s)
+         ; app (mkconst P.ops_conc.up_subst) (mkVar s')
         |]
     in
     ret @@ arrow hyp concl
@@ -153,19 +153,19 @@ struct
   (** Build [forall s s' t t', s =₁ s' -> t = t' -> substitute s t = substitute s' t']. *)
   let build_congr_substitute () : EConstr.t m =
     let open EConstr in
-    prod "s" (mkconst P.ops0.subst) @@ fun s ->
-    prod "s'" (mkconst P.ops0.subst) @@ fun s' ->
-    prod "t" (mkind P.ops0.term) @@ fun t ->
-    prod "t'" (mkind P.ops0.term) @@ fun t' ->
+    prod "s" (mkconst P.ops_conc.subst) @@ fun s ->
+    prod "s'" (mkconst P.ops_conc.subst) @@ fun s' ->
+    prod "t" (mkind P.ops_conc.term) @@ fun t ->
+    prod "t'" (mkind P.ops_conc.term) @@ fun t' ->
     let hyp_s =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; mkind P.ops0.term; mkVar s; mkVar s' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s; mkVar s' |]
     in
-    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops0.term; mkVar t; mkVar t' |] in
+    let hyp_t = apps (mkglob' C.eq) [| mkind P.ops_conc.term; mkVar t; mkVar t' |] in
     let concl =
       apps (mkglob' C.eq)
-        [| mkind P.ops0.term
-         ; apps (mkconst P.ops0.substitute) [| mkVar s; mkVar t |]
-         ; apps (mkconst P.ops0.substitute) [| mkVar s'; mkVar t' |]
+        [| mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.substitute) [| mkVar s; mkVar t |]
+         ; apps (mkconst P.ops_conc.substitute) [| mkVar s'; mkVar t' |]
         |]
     in
     ret @@ arrows [ hyp_s; hyp_t ] concl
@@ -174,24 +174,22 @@ struct
       [forall s1 s1' s2 s2', s1 =₁ s1' -> s2 =₁ s2' -> scomp s1 s2 =₁ scomp s1' s2']. *)
   let build_congr_scomp () : EConstr.t m =
     let open EConstr in
-    prod "s1" (mkconst P.ops0.subst) @@ fun s1 ->
-    prod "s1'" (mkconst P.ops0.subst) @@ fun s1' ->
-    prod "s2" (mkconst P.ops0.subst) @@ fun s2 ->
-    prod "s2'" (mkconst P.ops0.subst) @@ fun s2' ->
+    prod "s1" (mkconst P.ops_conc.subst) @@ fun s1 ->
+    prod "s1'" (mkconst P.ops_conc.subst) @@ fun s1' ->
+    prod "s2" (mkconst P.ops_conc.subst) @@ fun s2 ->
+    prod "s2'" (mkconst P.ops_conc.subst) @@ fun s2' ->
     let hyp_s1 =
-      apps (mkglob' C.point_eq)
-        [| mkglob' C.nat; mkind P.ops0.term; mkVar s1; mkVar s1' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s1; mkVar s1' |]
     in
     let hyp_s2 =
-      apps (mkglob' C.point_eq)
-        [| mkglob' C.nat; mkind P.ops0.term; mkVar s2; mkVar s2' |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; mkind P.ops_conc.term; mkVar s2; mkVar s2' |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
-         ; apps (mkconst P.ops0.scomp) [| mkVar s1; mkVar s2 |]
-         ; apps (mkconst P.ops0.scomp) [| mkVar s1'; mkVar s2' |]
+         ; mkind P.ops_conc.term
+         ; apps (mkconst P.ops_conc.scomp) [| mkVar s1; mkVar s2 |]
+         ; apps (mkconst P.ops_conc.scomp) [| mkVar s1'; mkVar s2' |]
         |]
     in
     ret @@ arrows [ hyp_s1; hyp_s2 ] concl
@@ -199,14 +197,14 @@ struct
   (** Build [forall (t1 t2 : O.expr Kt), t1 = t2 -> eval Kt t1 = eval Kt t2]. *)
   let build_congr_eval () : EConstr.t m =
     let open EConstr in
-    prod "t1" (term1 P.ops1) @@ fun t1 ->
-    prod "t2" (term1 P.ops1) @@ fun t2 ->
-    let hyp = apps (mkglob' C.eq) [| term1 P.ops1; mkVar t1; mkVar t2 |] in
+    prod "t1" (term1 P.ops_sign) @@ fun t1 ->
+    prod "t2" (term1 P.ops_sign) @@ fun t2 ->
+    let hyp = apps (mkglob' C.eq) [| term1 P.ops_sign; mkVar t1; mkVar t2 |] in
     let concl =
       apps (mkglob' C.eq)
-        [| mkind P.ops0.term
-         ; apps (mkconst P.ops_re.eval) [| kt P.ops1; mkVar t1 |]
-         ; apps (mkconst P.ops_re.eval) [| kt P.ops1; mkVar t2 |]
+        [| mkind P.ops_conc.term
+         ; apps (mkconst P.ops_re.eval) [| kt P.ops_sign; mkVar t1 |]
+         ; apps (mkconst P.ops_re.eval) [| kt P.ops_sign; mkVar t2 |]
         |]
     in
     ret @@ arrow hyp concl
@@ -214,15 +212,15 @@ struct
   (** Build [forall (s1 s2 : O.subst), s1 =₁ s2 -> seval s1 =₁ seval s2]. *)
   let build_congr_seval () : EConstr.t m =
     let open EConstr in
-    prod "s1" (subst1 P.ops1) @@ fun s1 ->
-    prod "s2" (subst1 P.ops1) @@ fun s2 ->
+    prod "s1" (subst1 P.ops_sign) @@ fun s1 ->
+    prod "s2" (subst1 P.ops_sign) @@ fun s2 ->
     let hyp =
-      apps (mkglob' C.point_eq) [| mkglob' C.nat; term1 P.ops1; mkVar s1; mkVar s2 |]
+      apps (mkglob' C.eq1) [| mkglob' C.nat; term1 P.ops_sign; mkVar s1; mkVar s2 |]
     in
     let concl =
-      apps (mkglob' C.point_eq)
+      apps (mkglob' C.eq1)
         [| mkglob' C.nat
-         ; mkind P.ops0.term
+         ; mkind P.ops_conc.term
          ; app (mkconst P.ops_re.seval) (mkVar s1)
          ; app (mkconst P.ops_re.seval) (mkVar s2)
         |]
@@ -281,7 +279,7 @@ struct
     let* h1 = intro_fresh "H" in
     let* h2 = intro_fresh "H" in
     let* _ = intro_fresh "i" in
-    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops0.rscomp) in
+    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops_conc.rscomp) in
     let* _ = rewrite LeftToRight (Names.GlobRef.VarRef h1) in
     let* _ = rewrite LeftToRight (Names.GlobRef.VarRef h2) in
     Tactics.reflexivity
@@ -293,7 +291,7 @@ struct
     let* h1 = intro_fresh "H" in
     let* h2 = intro_fresh "H" in
     let* _ = intro_fresh "i" in
-    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops0.srcomp) in
+    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops_conc.srcomp) in
     let* _ = Tactics.apply (mkconst congr_rename) in
     auto ()
 
@@ -310,7 +308,7 @@ struct
     in
     let* _ = Tactics.intro_patterns false [ CAst.make @@ i_patt ] in
     (* Unfold [scons] and finish with auto. *)
-    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops0.scons) in
+    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops_conc.scons) in
     Proofview.tclDISPATCH [ Tactics.reflexivity; Tactics.apply (EConstr.mkVar h) ]
 
   (** Prove [forall s s', s =₁ s' -> up_subst s =₁ up_subst s']. *)
@@ -319,7 +317,7 @@ struct
     let open PVMonad in
     let* _ = intro_n 2 in
     let* h = intro_fresh "H" in
-    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops0.up_subst) in
+    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops_conc.up_subst) in
     (* Apply [congr_scons]. *)
     let* _ = Tactics.apply (mkconst congr_scons) in
     let* _ = Proofview.tclDISPATCH [ Tactics.reflexivity; ret () ] in
@@ -368,7 +366,7 @@ struct
     let* h2 = intro_fresh "H" in
     let* i = intro_fresh "i" in
     (* Unfold [scomp]. *)
-    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops0.scomp) in
+    let* _ = Tactics.unfold_constr (Names.GlobRef.ConstRef P.ops_conc.scomp) in
     (* Apply [congr_substitute]. *)
     let* _ = Tactics.apply (mkconst congr_substitute) in
     auto ()
@@ -396,12 +394,12 @@ end
 (**************************************************************************************)
 
 (** Generate all the congruence lemmas. *)
-let generate (s : signature) (ops0 : ops_zero) (ops1 : ops_one) (ops_re : ops_reify_eval)
-    : ops_congr =
+let generate (s : signature) (ops_conc : ops_concrete) (ops_sign : ops_sign)
+    (ops_re : ops_reify_eval) : ops_congr =
   let module M = Make (struct
     let sign = s
-    let ops0 = ops0
-    let ops1 = ops1
+    let ops_conc = ops_conc
+    let ops_sign = ops_sign
     let ops_re = ops_re
   end) in
   let congr_ctors =

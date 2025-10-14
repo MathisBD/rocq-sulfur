@@ -28,19 +28,7 @@ let eq1 = resolve "sulfur.eq1.type"
 let eq1_refl = resolve "sulfur.eq1.refl"
 let eq1_sym = resolve "sulfur.eq1.sym"
 let eq1_trans = resolve "sulfur.eq1.trans"
-
-module NF = struct
-  let t = resolve "sulfur.normal_functor.type"
-  let map = resolve "sulfur.normal_functor.map"
-  let map_id = resolve "sulfur.normal_functor.map_id"
-  let map_comp = resolve "sulfur.normal_functor.map_comp"
-  let shape = resolve "sulfur.normal_functor.shape"
-  let size = resolve "sulfur.normal_functor.size"
-  let encode_shape = resolve "sulfur.normal_functor.encode_shape"
-  let encode_elems = resolve "sulfur.normal_functor.encode_elems"
-  let decode = resolve "sulfur.normal_functor.decode"
-  let encode_decode = resolve "sulfur.normal_functor.encode_decode"
-end
+let measure_induction = resolve "sulfur.measure_induction"
 
 (**************************************************************************************)
 (** *** Renamings. *)
@@ -64,7 +52,6 @@ let arg_ty = resolve "sulfur.arg_ty.type"
 let at_base = resolve "sulfur.arg_ty.base"
 let at_term = resolve "sulfur.arg_ty.term"
 let at_bind = resolve "sulfur.arg_ty.bind"
-let at_fctor = resolve "sulfur.arg_ty.fctor"
 let kind = resolve "sulfur.kind.type"
 let k_t = resolve "sulfur.kind.t"
 let k_a = resolve "sulfur.kind.a"
@@ -102,5 +89,4 @@ module P = struct
   let inv_Ka_term = resolve "sulfur.param.inv_Ka_term"
   let inv_Ka_base = resolve "sulfur.param.inv_Ka_base"
   let inv_Ka_bind = resolve "sulfur.param.inv_Ka_bind"
-  let inv_Ka_functor = resolve "sulfur.param.inv_Ka_functor"
 end

@@ -35,7 +35,7 @@ Inductive sscoping (Γ : scope) (σ : subst) : scope → Prop :=
       sscoping Γ (↑ >> σ) Δ →
       scoping Γ (σ 0) m →
       sscoping Γ σ (m :: Δ).
-      
+
 #[export] Instance rscoping_morphism :
   Proper (eq ==> pointwise_relation _ eq ==> eq ==> iff) rscoping.
 Proof.
@@ -119,7 +119,7 @@ Proof.
   - constructor.
   - constructor.
     + assumption.
-    + assert ((σ >> ↑) 0 = rename rshift (σ 0)) as -> by now rasimpl. 
+    + assert ((σ >> ↑) 0 = rename rshift (σ 0)) as -> by now rasimpl.
       eapply scoping_ren. 2: eassumption. apply rscoping_S.
 Qed.
 
@@ -220,20 +220,50 @@ Qed.
 
 (** Cast removal commutes with substitution **)
 
+Definition box {A} (x : A) := x.
+
+Lemma simplify_term_in_box (t t' : term) :
+  TermSimplification t t' -> box t = t'.
+Proof. intros H. unfold box. apply H. Qed.
+#[export] Hint Rewrite -> simplify_term_in_box : asimpl_new.
+
+Lemma simplify_subst_in_box (s : subst) :
+  (*SubstSimplification s s' ->*) box s = s.
+(*Proof. intros H. unfold box. apply H. Qed.*)
+Admitted.
+#[export] Hint Rewrite -> simplify_subst_in_box : asimpl_new.
+
+Ltac rasimpl_new :=
+  (rewrite_strat (bottomup (progress (try (hints asimpl_new))))) ; [| solve_simplification ..].
+
+(*Lemma test :
+  SubstSimplification (up_subst sid) sid -> box (up_subst sid) =₁ sid.
+Admitted.
+#[export] Hint Rewrite -> test : asimpl_new.*)
+
+(*Lemma scoping_test Γ s :
+  sscoping Γ (box (up_subst sid)) s.
+Proof.
+(*rewrite simplify_subst_in_box.*)
+rewrite_strat (bottomup (simplify_subst_in_box)).
+2: solve_simplification.
+rasimpl_new.*)
+
+
 Lemma castrm_subst :
   ∀ t σ,
     ε| t <[ σ ] | = ε| t | <[ fun i => castrm (σ i) ].
 Proof.
   intros t σ.
   assert (∀ σ t,
-    t <[ (Var 0 .: σ >> sshift) >> castrm] =
-    t <[ Var 0 .: σ >> (castrm >> rshift) ]
+    t <[ fun i => castrm ((Var 0 .: σ >> sshift) i)] =
+    t <[ Var 0 .: σ >> (fun x => rename rshift (castrm (Var x))) ]
   ).
-  { intros θ u.
-    apply ext_term. intros n.
+  { intros θ u. apply congr_substitute ; [|reflexivity]. intros n.
     destruct n.
-    - rasimpl. repeat core.unfold_funcomp. simpl. reflexivity.
-    - rasimpl. repeat core.unfold_funcomp. simpl.
+    - change (ε| box ((Var 0 .: θ >> ↑) 0) | = (Var 0 .: θ >> λ x : nat, ↑ᵣ ⋅ ε| box (Var x) |) 0).
+      rasimpl_new. rasimpl. (*repeat core.unfold_funcomp.*) simpl. reflexivity.
+    - new_rasimpl. Set Printing All. (*repeat core.unfold_funcomp.*) simpl.
       apply castrm_ren.
   }
   induction t in σ |- *. all: try reflexivity.

@@ -39,3 +39,4 @@ Equations castrm : term → term := {
   ε| bot_elim m A p | := bot_elim m ε|A| ε|p|
 }
 where "ε| u |" := (castrm u).
+

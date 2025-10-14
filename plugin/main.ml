@@ -8,7 +8,7 @@ open Signature
 
 (** We keep track of the generated operations using the [Libobject] API. The first step is
     to create a reference using [Summary.ref]. *)
-(*let saved_ops : (signature * ops_all) option ref =
+let saved_ops : (signature * ops_all) option ref =
   Summary.ref ~name:"autosubst_saved_ops_summary" None
 
 (** We declare a [Libobject.obj], which gives us a function [update_saved_ops] to update
@@ -22,7 +22,7 @@ let update_saved_ops : (signature * ops_all) option -> Libobject.obj =
       cache_function = (fun v -> saved_ops := v)
     ; load_function = (fun _ v -> saved_ops := v)
     ; classify_function = (fun _ -> Keep)
-    }*)
+    }
 
 (**************************************************************************************)
 (** *** Generating operations/lemmas. *)
@@ -44,32 +44,32 @@ let build_term (sign : signature) : Names.Ind.t m =
 
 (** Given a signature, generate all relevant definitions and lemmas (i.e. add them to the
     global environment), and return the names of the generated operations. *)
-(*let generate_operations (sign : signature) (term : Names.Ind.t) : ops_all =
-  let ops0 = Gen_ops_zero.generate sign term in
-  let ops1 = Gen_ops_one.generate sign ops0 in
+let generate_operations (sign : signature) (term : Names.Ind.t) : ops_all =
+  let ops0 = Gen_ops_concrete.generate sign term in
+  let ops1 = Gen_ops_sign.generate sign ops0 in
   let re = Gen_ops_reify_eval.generate sign ops0 ops1 in
   let congr = Gen_ops_congr.generate sign ops0 ops1 re in
   let bij = Gen_ops_bijection.generate sign ops0 ops1 re congr in
   let pe = Gen_ops_push_eval.generate sign ops0 ops1 re congr bij in
-  { ops_ops0 = ops0
-  ; ops_ops1 = ops1
+  { ops_conc = ops0
+  ; ops_si = ops1
   ; ops_re = re
   ; ops_congr = congr
   ; ops_bij = bij
   ; ops_pe = pe
-  }*)
+  }
 
 (** Register hints in database [asimpl_unfold] used by tactic [aunfold]. See [RASimpl.v]
     for more details. *)
-(*let register_aunfold_hints (sign : signature) (ops : ops_all) : unit =
+let register_aunfold_hints (sign : signature) (ops : ops_all) : unit =
   let force_const (gref : Names.GlobRef.t Lazy.t) : Names.Constant.t =
     match Lazy.force gref with
     | Names.GlobRef.ConstRef cname -> cname
     | _ -> Log.error "register_aunfold_hints: expected a reference to a constant"
   in
-  let consts = [ force_const C.up_ren; ops.ops_ops0.up_subst ] in
+  let consts = [ force_const C.up_ren; ops.ops_conc.up_subst ] in
   Hints.add_hints ~locality:Hints.Export [ "asimpl_unfold" ]
-    (HintsUnfoldEntry (List.map (fun c -> Evaluable.EvalConstRef c) consts))*)
+    (HintsUnfoldEntry (List.map (fun c -> Evaluable.EvalConstRef c) consts))
 
 (** Main entry point for the plugin: generate the term inductive as well as level zero
     terms, operations, and lemmas. *)
@@ -78,18 +78,12 @@ let generate (psign : psignature) : unit =
   let sign = monad_run @@ check_psignature psign in
   (* Generate the term inductive. *)
   let term = monad_run @@ build_term sign in
-  (* Generate all operations. *)
-  let ops_conc = Gen_ops_concrete.generate sign term in
-  let _ops_sign = Gen_ops_sign.generate sign ops_conc in
-  (*let _ops_re = Gen_ops_reify_eval.generate sign ops_conc ops_sign in*)
-  ()
-
-(* Generate the operations. *)
-(*let ops = generate_operations sign term in
+  (* Generate the operations. *)
+  let ops = generate_operations sign term in
   (* Register [aunfold] hints. *)
-  register_aunfold_hints sign ops;*)
-(* Save the operations. *)
-(*Lib.add_leaf @@ update_saved_ops (Some (sign, ops))*)
+  register_aunfold_hints sign ops;
+  (* Save the operations. *)
+  Lib.add_leaf @@ update_saved_ops (Some (sign, ops))
 
 (**************************************************************************************)
 (** *** Expose Ltac2 simplification tactics. *)
@@ -99,15 +93,14 @@ let generate (psign : psignature) : unit =
     [constr -> constr * constr], which is implemented by [body].
 
     You must write the following in a .v file before calling the tactic from Ltac2:
-    [Ltac2 @external my_tac : constr -> constr * constr := "autosubst-experiments.plugin"
-     "name"] *)
-(*let define_ltac2 (name : string)
+    [Ltac2 @external my_tac : constr -> constr * constr := "rocq-sulfur.plugin" "name"] *)
+let define_ltac2 (name : string)
     (body : signature -> ops_all -> EConstr.t -> (EConstr.t * EConstr.t) Proofview.tactic)
     : unit =
   let open Ltac2_plugin in
   let open Tac2externals in
   let open Tac2ffi in
-  (* We must delay fetching the saved operations [!saved_ops] until the tactic is 
+  (* We must delay fetching the saved operations [!saved_ops] until the tactic is
      actually called. *)
   let ocaml_tactic x =
     let sign, ops =
@@ -118,10 +111,10 @@ let generate (psign : psignature) : unit =
     body sign ops x
   in
   define
-    Tac2expr.{ mltac_plugin = "autosubst-experiments.plugin"; mltac_tactic = name }
+    Tac2expr.{ mltac_plugin = "rocq-sulfur.plugin"; mltac_tactic = name }
     (constr @-> tac (pair constr constr))
     ocaml_tactic
 
 let () =
   define_ltac2 "simpl_term_zero" Simplification.simpl_term_zero;
-  define_ltac2 "simpl_subst_zero" Simplification.simpl_subst_zero*)
+  define_ltac2 "simpl_subst_zero" Simplification.simpl_subst_zero

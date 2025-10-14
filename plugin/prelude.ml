@@ -27,10 +27,6 @@ type ops_sign =
   { base : Names.Ind.t
   ; base_eqdec : Names.Constant.t
   ; eval_base : Names.Constant.t
-  ; fctor : Names.Ind.t
-  ; fctor_eqdec : Names.Constant.t
-  ; fctor_shape : Names.Constant.t
-  ; fctor_size : Names.Constant.t
   ; ctor : Names.Ind.t
   ; ctor_eqdec : Names.Constant.t
   ; ctor_type : Names.Constant.t

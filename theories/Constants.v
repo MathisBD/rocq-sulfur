@@ -1,6 +1,6 @@
 (** This module exposes various constants to the OCaml plugin.
     Constants are accessed in the plugin from [plugin/constants.ml]. *)
-   
+
 From Sulfur Require Import Prelude Sig.
 From Sulfur Require ParamSyntax.
 
@@ -34,16 +34,7 @@ Register eq1_refl as sulfur.eq1.refl.
 Register eq1_sym as sulfur.eq1.sym.
 Register eq1_trans as sulfur.eq1.trans.
 
-Register NormalFunctor as sulfur.normal_functor.type.
-Register map as sulfur.normal_functor.map.
-Register map_id as sulfur.normal_functor.map_id.
-Register map_comp as sulfur.normal_functor.map_comp.
-Register shape as sulfur.normal_functor.shape.
-Register size as sulfur.normal_functor.size.
-Register encode_shape as sulfur.normal_functor.encode_shape.
-Register encode_elems as sulfur.normal_functor.encode_elems.
-Register decode as sulfur.normal_functor.decode.
-Register encode_decode_map as sulfur.normal_functor.encode_decode_map.
+Register PeanoNat.Nat.measure_induction as sulfur.measure_induction.
 
 (*********************************************************************************)
 (** *** Renamings. *)
@@ -69,7 +60,6 @@ Register arg_ty  as sulfur.arg_ty.type.
 Register AT_base as sulfur.arg_ty.base.
 Register AT_term as sulfur.arg_ty.term.
 Register AT_bind as sulfur.arg_ty.bind.
-Register AT_fctor as sulfur.arg_ty.fctor.
 
 Register kind as sulfur.kind.type.
 Register Kt as sulfur.kind.t.
@@ -91,7 +81,6 @@ Register ParamSyntax.E_al_cons as sulfur.param.expr.al_cons.
 Register ParamSyntax.E_abase as sulfur.param.expr.abase.
 Register ParamSyntax.E_aterm as sulfur.param.expr.aterm.
 Register ParamSyntax.E_abind as sulfur.param.expr.abind.
-Register ParamSyntax.E_afunctor as sulfur.param.expr.afunctor.
 Register ParamSyntax.subst as sulfur.param.subst.
 Register ParamSyntax.esize as sulfur.param.esize.
 
@@ -111,4 +100,3 @@ Register ParamSyntax.inv_Kal_cons as sulfur.param.inv_Kal_cons.
 Register ParamSyntax.inv_Ka_term as sulfur.param.inv_Ka_term.
 Register ParamSyntax.inv_Ka_base as sulfur.param.inv_Ka_base.
 Register ParamSyntax.inv_Ka_bind as sulfur.param.inv_Ka_bind.
-Register ParamSyntax.inv_Ka_functor as sulfur.param.inv_Ka_functor.

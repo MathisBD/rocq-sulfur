@@ -27,10 +27,6 @@ struct
     | AT_bind ty ->
         let r' = app (mkglob' C.up_ren) r in
         rename_func rename r' ty
-    | AT_fctor (i, ty) ->
-        let* fn = rename_func rename r ty in
-        let map = app (mkglob' C.NF.map) (mkglob P.sign.functors.(i)) in
-        apps_ev map 3 [| fn |]
 
   (** Build [rename : ren -> term -> term]. *)
   let build_rename (term : Names.Ind.t) : EConstr.t m =
@@ -123,10 +119,6 @@ struct
         lambda "t" ty @@ fun t -> ret (EConstr.mkVar t)
     | AT_term -> ret @@ apps substitute [| s |]
     | AT_bind ty -> substitute_func substitute up_subst (app up_subst s) ty
-    | AT_fctor (i, ty) ->
-        let* fn = substitute_func substitute up_subst s ty in
-        let map = app (mkglob' C.NF.map) (mkglob P.sign.functors.(i)) in
-        apps_ev map 3 [| fn |]
 
   (** Build [substitute : susbt -> term -> term]. *)
   let build_substitute (term : Names.Ind.t) (subst : Names.Constant.t)

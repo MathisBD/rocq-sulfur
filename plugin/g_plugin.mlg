@@ -8,52 +8,46 @@ DECLARE PLUGIN "rocq-sulfur.plugin"
 
 (** A single argument type, e.g. "(bind ty in term)".
     For technical reasons we have to move the rule for single identifiers to [ctor_ty]. *)
-VERNAC ARGUMENT EXTEND arg_ty 
+VERNAC ARGUMENT EXTEND arg_ty
 | [ identref(id) ] ->
     { CAst.make ~loc (PAT_sort id) }
-| [ "{{" lconstr(c) "}}" ] -> 
+| [ "{{" lconstr(c) "}}" ] ->
     { CAst.make ~loc (PAT_base c) }
-| [ "(" "bind" ne_identref_list(ids) "in" arg_ty(ty) ")" ] -> 
+| [ "(" "bind" ne_identref_list(ids) "in" arg_ty(ty) ")" ] ->
     { CAst.make ~loc (PAT_bind (ids, ty)) }
-| [ "(" identref(id) arg_ty(ty) ")" ] -> 
-    { CAst.make ~loc (PAT_fctor (id, ty)) }
 END
 
 (** The type of a constructor, e.g. "ty -> (bind term in term) -> term". *)
 VERNAC ARGUMENT EXTEND pctor_ty
 | [ identref(i) ] -> { ([], i) }
-| [ identref(i) "->" pctor_ty(cty) ] -> 
-  { 
-    let (tys, rty) = cty in 
-    (CAst.map (fun _ -> PAT_sort i) i :: tys, rty) 
+| [ identref(i) "->" pctor_ty(cty) ] ->
+  {
+    let (tys, rty) = cty in
+    (CAst.map (fun _ -> PAT_sort i) i :: tys, rty)
   }
 | [ arg_ty(ty) "->" pctor_ty(cty) ] -> { let (tys, rty) = cty in (ty :: tys, rty) }
 END
 
-(** A single functor/sort/constructor declaration. *)
-VERNAC ARGUMENT EXTEND decl 
-| [ identref(name) ":" "Functor" ] ->
-  { 
-    CAst.make ~loc (FctorDecl { name }) 
+(** A single sort/constructor declaration. *)
+VERNAC ARGUMENT EXTEND decl
+| [ identref(name) "(" identref(var_ctor) ")" ":" "Type" ] ->
+  {
+    CAst.make ~loc (SortDecl { name ; var_ctor = Some var_ctor })
   }
-| [ identref(name) "(" identref(var_ctor) ")" ":" "Type" ] -> 
-  { 
-    CAst.make ~loc (SortDecl { name ; var_ctor = Some var_ctor }) 
+| [ identref(name) ":" "Type" ] ->
+  {
+    CAst.make ~loc (SortDecl { name ; var_ctor = None })
   }
-| [ identref(name) ":" "Type" ] -> 
-  { 
-    CAst.make ~loc (SortDecl { name ; var_ctor = None }) 
-  }
-| [ identref(name) ":" pctor_ty(cty) ] -> 
-  { 
-    let (arg_tys, ret_ty) = cty in 
-    CAst.make ~loc (CtorDecl { name ; arg_tys ; ret_ty }) 
+| [ identref(name) ":" pctor_ty(cty) ] ->
+  {
+    let (arg_tys, ret_ty) = cty in
+    CAst.make ~loc (CtorDecl { name ; arg_tys ; ret_ty })
   }
 END
 
-VERNAC ARGUMENT EXTEND signature 
-| [ "{{" decl_list(decls) "}}" ] -> 
-  { 
+VERNAC ARGUMENT EXTEND signature
+| [ "{{" decl_list(decls) "}}" ] ->
+  {
     CAst.make ~loc { decls }
   }
 END
