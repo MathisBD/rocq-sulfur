@@ -102,10 +102,10 @@ Class SubstSimplification {T} (x y : nat -> T) :=
 Ltac2 solve_simplification_aux () :=
   lazy_match! Control.goal () with
   | TermSimplification ?t0 _ =>
-    printf "-------------------------------------";
-    printf "t := %t" t0;
+    (*printf "-------------------------------------";
+    printf "t := %t" t0;*)
     let (t0', eq0) := simpl_term_zero t0 in
-    printf "t' := %t" t0';
+    (*printf "t' := %t" t0';*)
     exact (MkTermSimplification _ $t0 $t0' $eq0)
   (*| RenSimplification ?r1 _ =>
     let (r1', eq1) := simpl_ren_one r1 in

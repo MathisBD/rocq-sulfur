@@ -220,36 +220,6 @@ Qed.
 
 (** Cast removal commutes with substitution **)
 
-Definition box {A} (x : A) := x.
-
-Lemma simplify_term_in_box (t t' : term) :
-  TermSimplification t t' -> box t = t'.
-Proof. intros H. unfold box. apply H. Qed.
-#[export] Hint Rewrite -> simplify_term_in_box : asimpl_new.
-
-Lemma simplify_subst_in_box (s : subst) :
-  (*SubstSimplification s s' ->*) box s = s.
-(*Proof. intros H. unfold box. apply H. Qed.*)
-Admitted.
-#[export] Hint Rewrite -> simplify_subst_in_box : asimpl_new.
-
-Ltac rasimpl_new :=
-  (rewrite_strat (bottomup (progress (try (hints asimpl_new))))) ; [| solve_simplification ..].
-
-(*Lemma test :
-  SubstSimplification (up_subst sid) sid -> box (up_subst sid) =₁ sid.
-Admitted.
-#[export] Hint Rewrite -> test : asimpl_new.*)
-
-(*Lemma scoping_test Γ s :
-  sscoping Γ (box (up_subst sid)) s.
-Proof.
-(*rewrite simplify_subst_in_box.*)
-rewrite_strat (bottomup (simplify_subst_in_box)).
-2: solve_simplification.
-rasimpl_new.*)
-
-
 Lemma castrm_subst :
   ∀ t σ,
     ε| t <[ σ ] | = ε| t | <[ fun i => castrm (σ i) ].
