@@ -1,4 +1,4 @@
-From Sulfur Require Import Prelude Sig Constants.
+From Sulfur Require Import Prelude Sig Constants Renamings.
 From Sulfur Require ParamSyntax ExplicitSyntax Simplification Cleanup.
 From Ltac2 Require Import RedFlags Printf.
 From Ltac2 Require Ltac2.

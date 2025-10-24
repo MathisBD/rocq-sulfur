@@ -1,4 +1,4 @@
-From Sulfur Require Import Prelude Sig.
+From Sulfur Require Import Prelude Sig Renamings.
 
 (** This file defines a term grammar parameterized over a signature,
     with _admissible_ renamings and substitutions i.e. renamings
