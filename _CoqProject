@@ -1,0 +1,4 @@
+-Q _build/install/default/lib/coq/user-contrib/Sulfur Sulfur
+-Q _build/install/default/lib/coq/user-contrib/Utils Utils
+-Q _build/install/default/lib/coq/user-contrib/GhostTT GhostTT
+-I _build/install/default/lib/
