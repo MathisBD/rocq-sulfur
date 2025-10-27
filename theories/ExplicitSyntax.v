@@ -1,4 +1,4 @@
-From Sulfur Require Import Prelude Sig.
+From Sulfur Require Import Prelude Sig Renamings.
 From Sulfur Require ParamSyntax.
 Module P := ParamSyntax.
 
@@ -270,7 +270,7 @@ Proof. now apply eq_qnat_ren_spec. Qed.
 (** An environment is a mapping from meta-variables to parameterized expressions. *)
 Record env :=
   { assign_qnat : mvar -> nat
-  ; assign_ren : mvar -> Prelude.ren
+  ; assign_ren : mvar -> Renamings.ren
   ; assign_term : mvar -> P.expr Kt
   ; assign_subst : mvar -> P.subst }.
 
@@ -283,7 +283,7 @@ Section Evaluation.
   qeval (Q_rapply r i) := reval r (qeval i) ;
   qeval (Q_mvar x) := e.(assign_qnat) x
 
-  with reval : ren -> Prelude.ren :=
+  with reval : ren -> Renamings.ren :=
   reval R_id := rid ;
   reval R_shift := rshift ;
   reval (R_cons i r) := rcons (qeval i) (reval r) ;
@@ -570,7 +570,7 @@ Fixpoint list_nth {A} (n : nat) (xs : list A) (default : A) : A :=
     Rocq representation. *)
 Ltac2 build_env (sig : constr) (e : env) : constr :=
   let e1 := coq_list constr:(nat) (e.(qnat_mvars)) in
-  let e2 := coq_list constr:(Prelude.ren) (e.(ren_mvars)) in
+  let e2 := coq_list constr:(Renamings.ren) (e.(ren_mvars)) in
   let e3 := coq_list constr:(@P.expr $sig Kt) (e.(term_mvars)) in
   let e4 := coq_list constr:(@P.subst $sig) (e.(subst_mvars)) in
   constr:(

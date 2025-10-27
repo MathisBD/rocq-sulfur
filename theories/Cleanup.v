@@ -1,4 +1,4 @@
-From Sulfur Require Import Prelude Sig ExplicitSyntax.
+From Sulfur Require Import Prelude Sig Renamings ExplicitSyntax.
 
 (** The output of simplification (Simplification.v) is good for comparing
     terms/substitutions for equality, but not very nice to work with for the user.
@@ -59,7 +59,7 @@ Proof.
 funelim (dest_rshift r) ; simp dest_rshift in * ; try easy.
 - intros H. depelim H. reflexivity.
 - intros H. depelim H. simp qeval. apply (Hind e n2) in Heq. rewrite Heq.
-  apply (Hind0 e n1) in Heq0. rewrite Heq0. cbv [Prelude.rcomp]. intros i. lia.
+  apply (Hind0 e n1) in Heq0. rewrite Heq0. cbv [Renamings.rcomp]. intros i. lia.
 Qed.
 
 (*********************************************************************************)
