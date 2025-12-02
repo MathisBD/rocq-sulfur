@@ -3,4 +3,4 @@
  (public_name rocq-sulfur.metaprog)
  (flags
   (:standard -warn-error +A -w -27-32-69))
- (libraries coq-core.vernac coq-core.tactics))
+ (libraries rocq-runtime.vernac rocq-runtime.tactics))

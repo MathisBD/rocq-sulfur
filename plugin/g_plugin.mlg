@@ -2,8 +2,8 @@ DECLARE PLUGIN "rocq-sulfur.plugin"
 
 {
   open Signature
-  open Pcoq.Prim
-  open Pcoq.Constr
+  open Procq.Prim
+  open Procq.Constr
 }
 
 (** A single argument type, e.g. "(bind ty in term)".

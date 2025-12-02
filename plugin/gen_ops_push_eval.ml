@@ -176,7 +176,7 @@ struct
         (* Simplify. *)
         let* _ =
           Tacticals.tclREPEAT
-            (Principles_proofs.simp_eqns [ "rename" ] >> Tactics.simpl_in_concl)
+            (Equations_plugin.Principles_proofs.simp_eqns [ "rename" ] >> Tactics.simpl_in_concl)
         in
         (* Apply the congruence principle and finish with [auto]. *)
         let* _ = Tactics.apply (mkconst P.congr.congr_ctors.(i - 1)) in
@@ -269,7 +269,7 @@ struct
         (* Simplify. *)
         let* _ =
           Tacticals.tclREPEAT
-            (Principles_proofs.simp_eqns [ "substitute" ] >> Tactics.simpl_in_concl)
+            (Equations_plugin.Principles_proofs.simp_eqns [ "substitute" ] >> Tactics.simpl_in_concl)
         in
         (* Apply the right congruence lemma. *)
         let* _ = Tactics.apply (mkconst P.congr.congr_ctors.(i - 1)) in

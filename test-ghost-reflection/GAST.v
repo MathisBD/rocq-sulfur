@@ -5,7 +5,7 @@ From GhostTT Require Import BasicAST.
 (** *** Generate all operations and lemmas. *)
 (*********************************************************************************)
 
-Sulfur Generate
+Time Sulfur Generate
 {{
   term : Type
 
@@ -69,3 +69,11 @@ Lemma test (Htest : substitute (up_subst Var) t = t) : substitute sid t = t.
 Proof. rasimpl. rasimpl in Htest.
 Admitted.
 
+Goal forall A, exists B, substitute sid B = A.
+Proof.
+  intros. eexists. now rasimpl.
+Qed.
+
+(*Goal forall A, exists B, substitute (scons (Var 0) sid) B = A.
+Proof.
+  intros. eexists. (*Not returning *) rasimpl.*)

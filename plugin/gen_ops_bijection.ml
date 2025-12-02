@@ -140,7 +140,7 @@ struct
   (** Call the tactic [lia]. *)
   let lia () : unit Proofview.tactic =
     let open Ltac_plugin in
-    let kname = mk_kername [ "Coq"; "micromega"; "Lia" ] "lia" in
+    let kname = mk_kername [ "Stdlib"; "micromega"; "Lia" ] "lia" in
     Tacinterp.eval_tactic (Tacenv.interp_ltac kname)
 
   (** Helper function for [prove_ind] which takes care of the [i]-th non-variable

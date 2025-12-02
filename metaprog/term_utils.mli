@@ -38,12 +38,12 @@ val retype : EConstr.t -> EConstr.types m
 
 (** [mk_qualid path label] makes the qualified identifier with directory path [path] and
     label [label]. For instance to create the qualid of [Nat.add] you can use
-    [mk_qualid ["Coq"; "Init"; "Nat"] "add"]. *)
+    [mk_qualid ["Corelib"; "Init"; "Nat"] "add"]. *)
 val mk_qualid : string list -> string -> Libnames.qualid
 
 (** [mk_kername path label] makes the kernel name with directory path [path] and label
     [label]. For instance to create the kernel name of [Nat.add] you can use
-    [mk_kername ["Coq"; "Init"; "Nat"] "add"]. *)
+    [mk_kername ["Corelib"; "Init"; "Nat"] "add"]. *)
 val mk_kername : string list -> string -> Names.KerName.t
 
 (** [mkconst name] builds the _monomorphic_ constant [name]. *)

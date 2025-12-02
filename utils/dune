@@ -1,4 +1,4 @@
 (coq.theory
  (name Utils)
  (package rocq-sulfur)
- (theories Equations))
+ (theories Stdlib Equations))
