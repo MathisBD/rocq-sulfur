@@ -1,9 +1,9 @@
 (** Basic meta-theory before building the model **)
 
-From Coq Require Import Utf8 List.
+From Stdlib Require Import Utf8 List.
 From GhostTT Require Import Util GAST BasicAST SubstNotations ContextDecl CastRemoval
   TermMode Scoping Typing.
-From Coq Require Import Setoid Morphisms Relation_Definitions.
+From Stdlib Require Import Setoid Morphisms Relation_Definitions.
 From Equations Require Import Equations.
 
 Import ListNotations.

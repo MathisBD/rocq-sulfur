@@ -549,11 +549,11 @@ with reify_subst (sig : constr) (e : env) (s : constr) : env * constr :=
 (** Turn a list of [constr] into a Rocq list.
     [ty] is the type of each element in the list, which is needed
     to build the empty list. *)
-Ltac2 rec coq_list (ty : constr) (xs : constr list) : constr :=
+Ltac2 rec rocq_list (ty : constr) (xs : constr list) : constr :=
   match xs with
   | [] => constr:(@nil $ty)
   | x :: xs =>
-    let xs := coq_list ty xs in
+    let xs := rocq_list ty xs in
     constr:(@cons $ty $x $xs)
   end.
 
@@ -569,10 +569,10 @@ Fixpoint list_nth {A} (n : nat) (xs : list A) (default : A) : A :=
 (** Turn the Ltac2 representation of the environment into the equivalent
     Rocq representation. *)
 Ltac2 build_env (sig : constr) (e : env) : constr :=
-  let e1 := coq_list constr:(nat) (e.(qnat_mvars)) in
-  let e2 := coq_list constr:(Renamings.ren) (e.(ren_mvars)) in
-  let e3 := coq_list constr:(@P.expr $sig Kt) (e.(term_mvars)) in
-  let e4 := coq_list constr:(@P.subst $sig) (e.(subst_mvars)) in
+  let e1 := rocq_list constr:(nat) (e.(qnat_mvars)) in
+  let e2 := rocq_list constr:(Renamings.ren) (e.(ren_mvars)) in
+  let e3 := rocq_list constr:(@P.expr $sig Kt) (e.(term_mvars)) in
+  let e4 := rocq_list constr:(@P.subst $sig) (e.(subst_mvars)) in
   constr:(
     @Build_env $sig
       (fun n => list_nth n $e1 0)

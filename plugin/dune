@@ -4,10 +4,10 @@
  (flags
   (:standard -warn-error +A -w -27-32-69 -rectypes))
  (libraries
-  coq-core.vernac
-  coq-core.tactics
-  coq-core.plugins.ltac2
-  coq-equations.plugin
+  rocq-runtime.vernac
+  rocq-runtime.tactics
+  rocq-runtime.plugins.ltac2
+  rocq-equations.plugin
   rocq-sulfur.metaprog))
 
 (coq.pp

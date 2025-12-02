@@ -1,6 +1,6 @@
 (**************************************************************************************)
-(** This module provides printf-style functions over the basic printing functions provided
-    by Coq. *)
+(** This module provides printf-style functions over the basic printing
+    functions provided by Rocq. *)
 (**************************************************************************************)
 
 (** [Log.printf] is a standard [printf] function, except it automatically adds a newline

@@ -76,7 +76,7 @@ end
 let derive_eqdec (ind : Names.Ind.t) : Names.Constant.t =
   (* Derive [NoConfusion] (required by [EqDec]) and [EqDec]. *)
   let pm =
-    Ederive.derive ~pm:Declare.OblState.empty ~poly:false [ "NoConfusion"; "EqDec" ]
+    Equations_plugin.Ederive.derive ~pm:Declare.OblState.empty ~poly:false [ "NoConfusion"; "EqDec" ]
       [ Loc.tag @@ Names.GlobRef.IndRef ind ]
   in
   (* Check no obligations remain. *)

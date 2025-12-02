@@ -1,4 +1,4 @@
-From Coq Require Import Utf8 List Bool.
+From Stdlib Require Import Utf8 List Bool.
 From Equations Require Import Equations.
 
 Import ListNotations.

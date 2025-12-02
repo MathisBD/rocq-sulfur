@@ -2,7 +2,7 @@
     as sets [{ 0, 1, 2, ..., n-1 }]. *)
 
 From Equations Require Import Equations.
-From Coq Require Import Bool.
+From Stdlib Require Import Bool.
 
 (** Enable reducing constants defined using [Equations]. *)
 Set Equations Transparent.
@@ -44,7 +44,7 @@ funelim (eqb_fin i i').
 - destruct H ; subst.
   + now left.
   + right. intros H. apply n. now depelim H.
-Qed.     
+Qed.
 
 (** Decidable equality on [fin n]. *)
 #[export] Instance fin_EqDec n : EqDec (fin n).

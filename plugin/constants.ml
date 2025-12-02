@@ -1,9 +1,9 @@
 (** This module defines Rocq constants we need to access from OCaml. Rocq constants are
     registered in [theories/Constants.v] using the command [Register ... as ...]. *)
 
-(** We have to wait until Rocq is initialized before calling [Coqlib.lib_ref], hence the
+(** We have to wait until Rocq is initialized before calling [Rocqlib.lib_ref], hence the
     use of [Lazy.t]. *)
-let resolve (ref : string) : Names.GlobRef.t Lazy.t = lazy (Coqlib.lib_ref ref)
+let resolve (ref : string) : Names.GlobRef.t Lazy.t = lazy (Rocqlib.lib_ref ref)
 
 (**************************************************************************************)
 (** *** Basic constants. *)

@@ -13,7 +13,7 @@ let convertible ?(pb = Conversion.CONV) (t1 : EConstr.t) (t2 : EConstr.t) : bool
   | Error _ -> (sigma, false)
 
 let unify ?(pb = Conversion.CONV) (t1 : EConstr.t) (t2 : EConstr.t) : unit m =
- fun env sigma -> (Unification.w_unify env sigma pb t1 t2, ())
+ fun env sigma -> (snd (Unification.w_unify env sigma pb t1 t2), ())
 
 let pretype (t : Constrexpr.constr_expr) : EConstr.t m =
  fun env sigma ->
@@ -30,7 +30,7 @@ let typecheck ?(solve_tc = false) (t : EConstr.t) (expected_ty : EConstr.t optio
   | None -> (sigma, actual_ty)
   | Some expected_ty ->
       let sigma = Unification.w_unify env sigma Conversion.CUMUL actual_ty expected_ty in
-      (sigma, actual_ty)
+      (snd sigma, actual_ty)
 
 let retype (t : EConstr.t) : EConstr.types m =
  fun env sigma -> (sigma, Retyping.get_type_of env sigma t)
@@ -144,8 +144,7 @@ let with_local_ctx (ctx : EConstr.rel_context) (k : Names.Id.t list -> 'a m) : '
 
 let fresh_type : EConstr.t m =
  fun env sigma ->
-  let level = UnivGen.fresh_level () in
-  let sigma = Evd.add_global_univ sigma level in
+  let sigma, level = Evd.new_univ_level_variable Evd.univ_flexible sigma in
   (sigma, EConstr.mkType @@ Univ.Universe.make level)
 
 let fresh_evar (ty : EConstr.t option) : EConstr.t m =
@@ -250,8 +249,8 @@ let split_list (n : int) (xs : 'a list) : 'a list * 'a list =
 let dest_ind (ty : EConstr.t) :
     (Names.Ind.t * EConstr.EInstance.t * EConstr.t list * EConstr.t list) m =
  fun env sigma ->
-  (* Weak-head reduce [ty] before decomposing it. 
-     Maybe we don't need all reduction rules here, perhaps a subset is still enough 
+  (* Weak-head reduce [ty] before decomposing it.
+     Maybe we don't need all reduction rules here, perhaps a subset is still enough
      (and would be more efficient). *)
   let ind, args = Reductionops.whd_all_stack env sigma ty in
   let ind, uinst = EConstr.destInd sigma ind in
@@ -325,8 +324,8 @@ let declare_def (kind : Decls.definition_object_kind) (name : Names.Id.t)
   | _ -> failwith "declare_def: expected a [ConstRef]."
 
 (* I had issues with the API in [Declare.Proof]: universe constraints introduced by [tac]
-   where not handled properly. Instead I now use the API from [Proof]: this allows 
-   me to get a hold on the final proof term, which I can manually typecheck to gather 
+   where not handled properly. Instead I now use the API from [Proof]: this allows
+   me to get a hold on the final proof term, which I can manually typecheck to gather
    universe constraints and solve any remaining evars using typing information. *)
 let declare_theorem (kind : Decls.theorem_kind) (name : Names.Id.t) (stmt : EConstr.t)
     (tac : unit Proofview.tactic) : Names.Constant.t m =
@@ -395,10 +394,10 @@ let declare_ind (name : Names.Id.t) (arity : EConstr.t) (ctor_names : Names.Id.t
     ; mind_entry_private = None
     }
   in
-  (* Don't forget to push the universe context set because [DeclareInd] does not do 
+  (* Don't forget to push the universe context set because [DeclareInd] does not do
      it for me. *)
   let ctx_set = Evd.universe_context_set sigma in
-  Global.push_context_set ~strict:true ctx_set;
+  Global.push_context_set ctx_set;
   let mind_name =
     DeclareInd.declare_mutual_inductive_with_eliminations mind
       (Monomorphic_entry ctx_set, UnivNames.empty_binders)

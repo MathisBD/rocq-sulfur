@@ -1,4 +1,4 @@
-(lang dune 3.16)
+(lang dune 3.20)
 
 (using coq 0.9)
 
@@ -12,8 +12,8 @@
  (authors "Mathis Bouverot-Dupuis")
  (homepage "https://github.com/MathisBD/autosubst-experiments")
  (bug_reports "https://github.com/MathisBD/autosubst-experiments/issues")
- (synopsis "A tool to deal with syntax and binders.")
+ (synopsis "A tool to deal with syntax and binders")
  (depends
-  (coq
-   (= 8.20.0))
-  coq-equations))
+  (rocq-prover
+   (= 9.0.0))
+  rocq-equations))
