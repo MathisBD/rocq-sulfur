@@ -148,6 +148,14 @@ with sred : subst -> subst -> Prop :=
 | sred_congr_cons : Proper (ered ==> sred ==> sred) S_cons
 | sred_congr_comp : Proper (sred ==> sred ==> sred) S_comp
 | sred_congr_ren : Proper (rred ==> sred) S_ren
+(* Cleanup rules. *)
+| sred_comp_ren_l s1 s2 r :
+    dest_ren s1 = Some r -> dest_ren s2 = None -> S_comp s1 s2 =s=> S_comp (S_ren r) s2
+| sred_comp_ren_r s1 s2 r :
+    dest_ren s1 = None -> dest_ren s2 = Some r -> S_comp s1 s2 =s=> S_comp s1 (S_ren r)
+(* Not sure if we want the following rule, we might enable it later on. *)
+| sred_comp_ren s1 s2 r1 r2 :
+  dest_ren s1 = Some r1 -> dest_ren s2 = Some r2 -> S_comp s1 s2 =s=> S_ren (R_comp r1 r2)
 
 where "t =e=> t'" := (ered t t')
   and "s =s=> s'" := (sred s s').
@@ -233,6 +241,9 @@ all: try solve [ now rewrite H0 | now rewrite H0, H2 ].
 - eapply dest_ren_sound in H. rewrite H. simp eeval. simp rename. reflexivity.
 - reflexivity.
 - eapply rred_sound in H. now rewrite H.
+- eapply dest_ren_sound in H. rewrite H. simp eeval. reflexivity.
+- eapply dest_ren_sound in H0. rewrite H0. simp eeval. reflexivity.
+- eapply dest_ren_sound in H, H0. rewrite H, H0. simp qeval eeval. reflexivity.
 Qed.
 
 Lemma ered_sound {k} e (t t' : expr k) : t =e=> t' -> eeval e t = eeval e t'.
@@ -340,6 +351,23 @@ Proof. funelim (substitute s t) ; simp red ; auto ; try easy. Qed.
 #[local] Hint Rewrite <-@substitute_red : red.
 
 (*********************************************************************************)
+(** *** [scomp] *)
+(*********************************************************************************)
+
+(** Cleanup [S_comp s1 s2]. *)
+Equations scomp : subst -> subst -> subst :=
+scomp s1 s2 with dest_ren s1, dest_ren s2 := {
+  | Some r1, Some r2 => S_ren (R_comp r1 r2)
+  | Some r1, None => S_comp (S_ren r1) s2
+  | None, Some r2 => S_comp s1 (S_ren r2)
+  | None, None => S_comp s1 s2
+  }.
+
+Lemma scomp_red s1 s2 : S_comp s1 s2 =s=> scomp s1 s2.
+Proof. funelim (scomp s1 s2) ; simp red ; auto. Qed.
+#[local] Hint Rewrite <-@scomp_red : red.
+
+(*********************************************************************************)
 (** *** [eclean] and [sclean] *)
 (*********************************************************************************)
 
@@ -360,7 +388,7 @@ with sclean : subst -> subst :=
 sclean S_id := S_id ;
 sclean S_shift := S_shift ;
 sclean (S_cons t s) := S_cons (eclean t) (sclean s) ;
-sclean (S_comp s1 s2) := S_comp (sclean s1) (sclean s2) ;
+sclean (S_comp s1 s2) := scomp (sclean s1) (sclean s2) ;
 sclean (S_ren r) := S_ren (rclean r) ;
 sclean (S_mvar m) := S_mvar m.
 
@@ -381,4 +409,3 @@ Proof. now apply eclean_sclean_red. Qed.
 #[local] Hint Rewrite sclean_red : red.
 
 End WithSignature.
-

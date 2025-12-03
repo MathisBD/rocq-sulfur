@@ -65,9 +65,18 @@ Proof. intros H. now apply term_simplification. Qed.
 Axiom r : ren.
 Axiom t : term.
 Axiom s : subst.
-Lemma test (Htest : substitute (up_subst Var) t = t) : substitute sid t = t.
+Lemma test1 (Htest : substitute (up_subst Var) t = t) : substitute sid t = t.
 Proof. rasimpl. rasimpl in Htest.
 Admitted.
+
+Lemma test2 : substitute (scomp sshift s) t = t.
+Proof. rasimpl. Admitted.
+
+Lemma test3 : substitute (scomp s (scons (Var 0) sid)) t = t.
+Proof. rasimpl. Admitted.
+
+Lemma test4 : substitute (scons t (scomp sshift sshift)) t = t.
+Proof. rasimpl. Admitted.
 
 Goal forall A, exists B, substitute sid B = A.
 Proof.
