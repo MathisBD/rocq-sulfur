@@ -15,7 +15,7 @@ Notation "a ⋅ x" :=
   (rename a x) (at level 20, right associativity) : subst_scope.
 
 Notation "t <[ s ]" :=
-  (substitute s t) (at level 10, right associativity) : subst_scope.
+  (substitute s t) (at level 1, right associativity) : subst_scope.
 
 Notation "↑" := (sshift) : subst_scope.
 Notation "s '..'" := (scons s sid) (at level 1, format "s ..") : subst_scope.

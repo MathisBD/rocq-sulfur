@@ -63,8 +63,8 @@ Combined Scheme qnat_ren_ind from qnat_ind, ren_ind.
 
 (** Notations for expressions with known kinds. *)
 Reserved Notation "'term'" (at level 0).
-Reserved Notation "'arg' ty" (at level 0, ty at level 0).
-Reserved Notation "'args' tys" (at level 0, tys at level 0).
+Reserved Notation "'arg' ty" (at level 1, ty at level 1).
+Reserved Notation "'args' tys" (at level 1, tys at level 1).
 
 Unset Elimination Schemes.
 

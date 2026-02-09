@@ -76,7 +76,7 @@ end
 let derive_eqdec (ind : Names.Ind.t) : Names.Constant.t =
   (* Derive [NoConfusion] (required by [EqDec]) and [EqDec]. *)
   let pm =
-    Equations_plugin.Ederive.derive ~pm:Declare.OblState.empty ~poly:false [ "NoConfusion"; "EqDec" ]
+    Equations_plugin.Ederive.derive ~pm:Declare.OblState.empty ~poly:PolyFlags.default [ "NoConfusion"; "EqDec" ]
       [ Loc.tag @@ Names.GlobRef.IndRef ind ]
   in
   (* Check no obligations remain. *)
@@ -84,7 +84,7 @@ let derive_eqdec (ind : Names.Ind.t) : Names.Constant.t =
   (* Get the name of the generated [EqDec] instance. *)
   let modpath = Names.Ind.modpath ind in
   let label =
-    Names.Label.make (Names.Label.to_string (Names.MutInd.label (fst ind)) ^ "_EqDec")
+    Names.Id.of_string (Names.Id.to_string (Names.MutInd.label (fst ind)) ^ "_EqDec")
   in
   Names.Constant.make1 @@ Names.KerName.make modpath label
 

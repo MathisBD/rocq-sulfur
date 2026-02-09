@@ -11,11 +11,11 @@ Set Primitive Projections.
 
 **)
 
-Notation decl := (mode * term)%type.
+Abbreviation decl := (mode * term)%type.
 
-Notation context := (list decl).
+Abbreviation context := (list decl).
 
-Notation scope := (list mode).
+Abbreviation scope := (list mode).
 
 Definition sc (Γ : context) : scope :=
   map fst Γ.

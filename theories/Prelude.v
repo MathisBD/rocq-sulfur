@@ -41,3 +41,10 @@ Ltac feed H :=
 Ltac feed2 H := feed H ; [| feed H].
 Ltac feed3 H := feed H ; [| feed2 H].
 Ltac feed4 H := feed H ; [| feed3 H].
+
+
+Create Rewrite HintDb red.
+Create Rewrite HintDb seval.
+Create Rewrite HintDb asimpl_topdown.
+Create Rewrite HintDb asimpl_outermost.
+Create Rewrite HintDb asimpl_unfold.

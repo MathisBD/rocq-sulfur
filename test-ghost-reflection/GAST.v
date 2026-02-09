@@ -45,21 +45,10 @@ Time Sulfur Generate
   bot_elim : {{mode}} -> term -> term -> term
 }}.
 
-(*********************************************************************************)
-(** *** Triggers. *)
-(*********************************************************************************)
-
-(** Trigger [rasimpl] on [rename _ _]. *)
-Lemma sulfur_simpl_term_rename (r : ren) (t res : term) :
-  TermSimplification (rename r t) res -> rename r t = res.
-Proof. intros H. now apply term_simplification. Qed.
-#[export] Hint Rewrite -> sulfur_simpl_term_rename : asimpl_topdown.
-
-(** Trigger [rasimpl] on [substitute _ _]. *)
-Lemma sulfur_simpl_term_substitute (s : subst) (t res : term) :
-  TermSimplification (substitute s t) res -> substitute s t = res.
-Proof. intros H. now apply term_simplification. Qed.
-#[export] Hint Rewrite -> sulfur_simpl_term_substitute : asimpl_topdown.
+(* FIXME (should be automatic) *)
+Ltac2 Set aunfold_list as old := fun () => List.append (constants up_ren, up_subst) (old ()).
+From Ltac2 Require Import Rewrite.
+Ltac2 Set rasimpl_matches := fun () => Strategy.choice (Strategy.matches pat:(rename _ _)) (Strategy.matches pat:(substitute _ _)).
 
 (** Example. *)
 Axiom r : ren.

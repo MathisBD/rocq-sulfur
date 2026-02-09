@@ -57,7 +57,7 @@ End Mode.
 
 (* Handy notation for the mode in a context *)
 
-Notation mdc Γ t := (md (sc Γ) t).
+Abbreviation mdc Γ t := (md (sc Γ) t).
 
 (** Relation with scoping **)
 
