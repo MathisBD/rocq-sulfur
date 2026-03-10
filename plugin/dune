@@ -10,5 +10,5 @@
   rocq-equations.plugin
   rocq-sulfur.metaprog))
 
-(coq.pp
+(rocq.pp
  (modules g_plugin))

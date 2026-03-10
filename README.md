@@ -1,13 +1,13 @@
-# Building 
+# Building
 
 Create a local opam switch with the required packages:
 ```
-opam switch create . 4.14.2 --repos=default,rocq-released='https://coq.inria.fr/opam/released' -y
+opam switch create . 4.14.2 --repos=default,rocq-released='https://rocq-prover.org/opam/released' -y
 ```
 
 Optionally install development packages, e.g. for VS Code:
 ```
-opam install ocaml-lsp-server user-setup ocamlformat vscoq-language-server
+opam install ocaml-lsp-server user-setup ocamlformat vsrocq-language-server
 opam user-setup install
 ```
 
@@ -18,14 +18,14 @@ dune build && dune install
 
 # Signatures
 
-Here is the grammar of signatures. Non-terminals are surrounded with square brackets, 
+Here is the grammar of signatures. Non-terminals are surrounded with square brackets,
 and [ident] stands for valid Rocq identifiers.
 
 ```
 [signature] ::= {{ [sort_decl] [ctor_decl]* }} (* There must be exactly one sort declaration. *)
 
 [sort_decl] ::= [ident] : Type              (* Declare a sort. *)
-              | [ident] ( [ident] ) : Type  (* Declare a sort, specifying the name of 
+              | [ident] ( [ident] ) : Type  (* Declare a sort, specifying the name of
                                                the variable constructor between parentheses. *)
 
 [ctor_decl] ::= [ident] : [ctor_type]       (* Declare a constructor with the given type. )

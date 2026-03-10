@@ -1,6 +1,6 @@
-(lang dune 3.20)
+(lang dune 3.21)
 
-(using coq 0.9)
+(using rocq 0.11)
 
 (name rocq-sulfur)
 
