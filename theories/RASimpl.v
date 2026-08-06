@@ -1,6 +1,6 @@
 From Sulfur Require Import Prelude Sig Constants Renamings.
 From Sulfur Require ParamSyntax ExplicitSyntax Simplification Cleanup.
-From Ltac2 Require Import RedFlags Printf.
+From Ltac2 Require Import RedFlags Printf Rewrite Std.
 From Ltac2 Require Ltac2.
 
 Module P := ParamSyntax.
@@ -77,88 +77,48 @@ Declare ML Module "rocq-sulfur.plugin".
 Ltac2 @external simpl_term_zero : constr -> constr * constr := "rocq-sulfur.plugin" "simpl_term_zero".
 Ltac2 @external simpl_subst_zero : constr -> constr * constr := "rocq-sulfur.plugin" "simpl_subst_zero".
 
-(*********************************************************************************)
-(** *** Boilerplate for [rasimpl]. *)
-(*********************************************************************************)
 
-(** [Simplification x y] expresses the fact that [x] simplifies into [y].
-    Typically [x] is a ground term and [y] is an evar, and a proof of
-    [Simplification x y] instantiates [y] with a simplified version of [x]. *)
+Ltac2 mutable aunfold_list () : reference list := [].
 
-Class NatSimplification (x y : nat) :=
-  MkNatSimplification { nat_simplification : x = y }.
+Ltac2 Notation "constants" pl(list1(reference, ",")) := pl.
+(* To be employed as
+Ltac2 Set aunfold_list as old := fun () => List.append (constants foo, bla) (old ()).
+*)
 
-Class RenSimplification (x y : nat -> nat) :=
-  MkRenSimplification { ren_simplification : x =₁ y }.
+Import Strategy.
 
-Class TermSimplification {T} (x y : T) :=
-  MkTermSimplification { term_simplification : x = y }.
+Ltac2 sulfur_simpl_term_rename carrier lhs _rel :=
+  (* FIXME: No autounfold in Ltac2 ? should use the hints of asimpl_unfold or find an alternative extensible solution (reference to a list ?) *)
+  let unfold_list := List.map (fun r => (r, AllOccurrences)) (aunfold_list ()) in
+  let lhs := eval_unfold unfold_list lhs in
+  let (rhs, prf) := simpl_term_zero lhs in
+  if Constr.equal lhs rhs then Fail
+  else Success { rel := '(@eq $carrier); rhs ; prf }.
 
-Class SubstSimplification {T} (x y : nat -> T) :=
-  MkSubstSimplification { subst_simplification : x =₁ y }.
+Ltac2 mutable rasimpl_matches () : Strategy.t := Strategy.fail.
 
-(** Helper function for [solve_simplification] which might leave unsolved
-    typeclass instances as shelved goals. *)
-Ltac2 solve_simplification_aux () :=
-  lazy_match! Control.goal () with
-  | TermSimplification ?t0 _ =>
-    (*printf "-------------------------------------";
-    printf "t := %t" t0;*)
-    let (t0', eq0) := simpl_term_zero t0 in
-    (*printf "t' := %t" t0';*)
-    exact (MkTermSimplification _ $t0 $t0' $eq0)
-  (*| RenSimplification ?r1 _ =>
-    let (r1', eq1) := simpl_ren_one r1 in
-    exact (MkRenSimplification _ $r1 $r1' $eq1)*)
-  | SubstSimplification ?s0 _ =>
-    let (s0', eq0) := simpl_subst_zero s0 in
-    exact (MkSubstSimplification _ $s0 $s0' $eq0)
-  end.
+Ltac2 rasimpl0 idopt :=
+  (* rewrite_strat should be focused but that's not documented *)
+  Control.enter (fun () =>
+  rewrite_strat (bottomup (seq (rasimpl_matches ()) (tactic sulfur_simpl_term_rename))) idopt).
 
-(** Solve a goal of the form [TermSimplification ?t _] or [SubstSimplification ?s _]. *)
-Ltac solve_simplification :=
-  ltac2:(solve_simplification_aux ()).
+Ltac2 Abbreviation rasimpl := rasimpl0 None.
+Ltac2 Notation "rasimpl" "in" h(ident) := rasimpl0 (Some h).
 
 (*********************************************************************************)
 (** *** [rasimpl]. *)
 (*********************************************************************************)
 
-(** Unfold constants related to terms and substitutions, typically before [rasimpl]. *)
-Ltac aunfold := autounfold with asimpl_unfold.
-
-(** Topdown version of [rasimpl]. *)
-Ltac rasimpl_topdown :=
-  (rewrite_strat (topdown (hints asimpl_topdown))) ; [| solve_simplification ..].
-
-(** Outermost version of [rasimpl]. *)
-Ltac rasimpl_outermost :=
-  (rewrite_strat (outermost (hints asimpl_outermost))) ; [| solve_simplification ..].
-
 (** Simplify in the goal. *)
-Ltac rasimpl :=
-  repeat aunfold ;
-  repeat rasimpl_topdown ;
-  repeat rasimpl_outermost.
+Ltac rasimpl := ltac2:(rasimpl).
 
 (*********************************************************************************)
 (** *** [rasimpl in H]. *)
 (*********************************************************************************)
 
-(** Unfold constants related to terms and substitutions, typically before [rasimpl in H]. *)
-Tactic Notation "aunfold" "in" hyp(H) := autounfold with asimpl_unfold in H.
-
-(** Topdown version of [rasimpl in H]. *)
-Tactic Notation "rasimpl_topdown" "in" hyp(H) :=
-  (rewrite_strat (topdown (hints asimpl_topdown)) in H) ; [| solve_simplification ..].
-
-(** Outermost version of [rasimpl in H]. *)
-Tactic Notation "rasimpl_outermost" "in" hyp(H) :=
-  (rewrite_strat (outermost (hints asimpl_outermost)) in H) ; [| solve_simplification ..].
-
 (** Simplify in a hypothesis [H]. *)
 Tactic Notation "rasimpl" "in" hyp(H) :=
-  repeat aunfold in H ;
-  repeat rasimpl_topdown in H ;
-  repeat rasimpl_outermost in H.
+  let k := ltac2:(h |- rasimpl0 (Some (Option.get (Ltac1.to_ident h)))) in
+  k H.
 
 (** Tests... *)

@@ -178,7 +178,7 @@ Inductive scoping (Γ : scope) : term → mode → Prop :=
       scoping Γ (bot_elim m A p) m
 .
 
-Notation cscoping Γ := (scoping (sc Γ)).
+Abbreviation cscoping Γ := (scoping (sc Γ)).
 
 Create HintDb gtt_scope discriminated.
 

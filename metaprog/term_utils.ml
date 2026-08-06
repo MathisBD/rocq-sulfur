@@ -19,7 +19,7 @@ let pretype (t : Constrexpr.constr_expr) : EConstr.t m =
  fun env sigma ->
   let t = Constrintern.intern_constr env sigma t in
   let t, ustate = Pretyping.understand env sigma t in
-  (Evd.merge_universe_context sigma ustate, t)
+  (Evd.merge_ustate sigma ustate, t)
 
 let typecheck ?(solve_tc = false) (t : EConstr.t) (expected_ty : EConstr.t option) :
     EConstr.types m =
@@ -48,7 +48,7 @@ let mk_kername (dir : string list) (label : string) : Names.KerName.t =
   let dir =
     Names.ModPath.MPfile (Names.DirPath.make @@ List.rev_map Names.Id.of_string_soft dir)
   in
-  let label = Names.Label.make label in
+  let label = Names.Id.of_string label in
   Names.KerName.make dir label
 
 let mkconst (name : Names.Constant.t) : EConstr.t = EConstr.UnsafeMonomorphic.mkConst name
@@ -69,17 +69,17 @@ let mkglob' (name : Names.GlobRef.t Lazy.t) : EConstr.t = mkglob @@ Lazy.force n
 let fresh_ind (ind : Names.Ind.t) : EConstr.t m =
  fun env sigma ->
   let sigma, (_, uinst) = Evd.fresh_inductive_instance env sigma ind in
-  (sigma, EConstr.mkIndU (ind, EConstr.EInstance.make uinst))
+  (sigma, EConstr.mkIndU (ind, uinst))
 
 let fresh_ctor (ctor : Names.Construct.t) : EConstr.t m =
  fun env sigma ->
   let sigma, (_, uinst) = Evd.fresh_constructor_instance env sigma ctor in
-  (sigma, EConstr.mkConstructU (ctor, EConstr.EInstance.make uinst))
+  (sigma, EConstr.mkConstructU (ctor, uinst))
 
 let fresh_const (const : Names.Constant.t) : EConstr.t m =
  fun env sigma ->
   let sigma, (_, uinst) = Evd.fresh_constant_instance env sigma const in
-  (sigma, EConstr.mkConstU (const, EConstr.EInstance.make uinst))
+  (sigma, EConstr.mkConstU (const, uinst))
 
 (**************************************************************************************)
 (** *** Manipulating contexts. *)
@@ -125,7 +125,7 @@ let with_local_decl (decl : EConstr.rel_declaration) (k : Names.Id.t -> 'a m) : 
           , EConstr.to_constr ~abort_on_undefined_evars:false sigma def
           , EConstr.to_constr ~abort_on_undefined_evars:false sigma ty )
   in
-  with_env' (Environ.push_named named_decl) @@ k id
+  with_env' (Environ.push_named ProofVar named_decl) @@ k id
 
 let with_local_ctx (ctx : EConstr.rel_context) (k : Names.Id.t list -> 'a m) : 'a m =
   (* We process declarations from outermost to innermost. *)
@@ -289,7 +289,7 @@ let case (scrutinee : EConstr.t)
   let* sigma = get_sigma in
   ret
   @@ Inductiveops.simple_make_case_or_project env sigma
-       (Inductiveops.make_case_info env ind Constr.RegularStyle)
+       (Inductiveops.make_case_info env ind Constr.MatchStyle)
        (return, EConstr.ERelevance.relevant)
        Constr.NoInvert scrutinee (Array.of_list branch_list)
 
@@ -337,7 +337,7 @@ let declare_theorem (kind : Decls.theorem_kind) (name : Names.Id.t) (stmt : ECon
   let proof =
     Proof.start
       ~name:(Names.Id.of_string_soft "term_ind'")
-      ~poly:false sigma
+      ~poly:PolyFlags.default sigma
       [ (env, stmt) ]
   in
   let proof, _, _ = Proof.run_tactic env tac proof in

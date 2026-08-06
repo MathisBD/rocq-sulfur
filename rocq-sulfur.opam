@@ -7,7 +7,7 @@ homepage: "https://github.com/MathisBD/autosubst-experiments"
 bug-reports: "https://github.com/MathisBD/autosubst-experiments/issues"
 depends: [
   "dune" {>= "3.21"}
-  "rocq-prover" {= "9.0.0"}
+  "rocq-prover" {= "meta.1"}
   "rocq-equations"
   "odoc" {with-doc}
 ]

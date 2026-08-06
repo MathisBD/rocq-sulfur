@@ -15,8 +15,8 @@ Context {sig : signature}.
 
 (** Notations for expressions with known kinds. *)
 #[local] Reserved Notation "'term'" (at level 0).
-#[local] Reserved Notation "'arg' ty" (at level 0, ty at level 0).
-#[local] Reserved Notation "'args' tys" (at level 0, tys at level 0).
+#[local] Reserved Notation "'arg' ty" (at level 1, ty at level 1).
+#[local] Reserved Notation "'args' tys" (at level 1, tys at level 1).
 
 Unset Elimination Schemes.
 
@@ -74,6 +74,8 @@ Section ExprInd.
   Qed.
 
 End ExprInd.
+
+Register Scheme expr_ind as ind_dep for expr.
 
 (*********************************************************************************)
 (** *** Size of expressions. *)

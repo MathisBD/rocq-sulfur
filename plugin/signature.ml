@@ -120,7 +120,7 @@ let check_sort (st : state) (sort : Names.lident) : unit =
 let check_base (st : state) (c : Constrexpr.constr_expr) : state * int =
   (* Internalize the base type, updating the evar context along the way. *)
   let c, ustate = Constrintern.interp_type st.env st.sigma c in
-  let sigma = Evd.merge_universe_context st.sigma ustate in
+  let sigma = Evd.merge_ustate st.sigma ustate in
   let c = Evarutil.nf_evar sigma c in
   (* Add it to the list. *)
   let idx = List.length st.base_types in
